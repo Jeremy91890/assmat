@@ -1,0 +1,24 @@
+{
+  "name": "Assmat — suivi & fiche de paie",
+  "short_name": "Assmat",
+  "description": "Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/assmat/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f1ea",
+  "theme_color": "#2f6353",
+  "categories": ["productivity", "finance"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Fiche de paie", "url": "./index.html#paie" }
+  ]
+}

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assmat — suivi & fiche de paie</title>
+<meta name="description" content="Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.">
+<meta name="theme-color" content="#2f6353">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Assmat">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>
+        <strong>Assmat</strong>
+        <em id="brand-sub">Suivi de garde</em>
+      </span>
+    </div>
+    <button id="btn-install" class="btn ghost sm" hidden>Installer</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab is-active" role="tab" aria-selected="true"  aria-controls="vue-calendrier" data-view="calendrier">Calendrier</button>
+  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-paie"       data-view="paie">Fiche de paie</button>
+  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-params"     data-view="params">Paramètres</button>
+</nav>
+
+<main>
+
+  <!-- ============ CALENDRIER ============ -->
+  <section id="vue-calendrier" class="view is-active" role="tabpanel">
+    <div class="monthnav">
+      <button class="btn icon" id="mois-prev" aria-label="Mois précédent">‹</button>
+      <div class="monthnav-label">
+        <h1 id="mois-titre">—</h1>
+        <button class="btn ghost xs" id="mois-today">Aujourd’hui</button>
+      </div>
+      <button class="btn icon" id="mois-next" aria-label="Mois suivant">›</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="card">
+      <div class="cal-head" aria-hidden="true">
+        <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span>
+        <span class="we">S</span><span class="we">D</span><span class="wk">Σ</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <p class="legend">
+        <span class="lg lg-present"></span> saisi
+        <span class="lg lg-absent"></span> absence
+        <span class="lg lg-repas"></span> repas
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Remplissage rapide</h2>
+      <p class="muted">Applique la journée type (<span id="type-desc">—</span>) aux jours d’accueil du contrat, sans écraser ce que vous avez déjà saisi.</p>
+      <div class="row wrap">
+        <button class="btn" id="fill-week">Semaine en cours</button>
+        <button class="btn" id="fill-month">Tout le mois</button>
+        <button class="btn danger ghost" id="clear-month">Vider le mois</button>
+      </div>
+      <fieldset class="jours-contrat">
+        <legend>Jours d’accueil</legend>
+        <div class="chips" id="jours-contrat"></div>
+      </fieldset>
+    </div>
+  </section>
+
+  <!-- ============ FICHE DE PAIE ============ -->
+  <section id="vue-paie" class="view" role="tabpanel">
+    <div class="monthnav no-print">
+      <button class="btn icon" id="paie-prev" aria-label="Mois précédent">‹</button>
+      <div class="monthnav-label"><h1 id="paie-titre">—</h1></div>
+      <button class="btn icon" id="paie-next" aria-label="Mois suivant">›</button>
+    </div>
+
+    <div class="row wrap no-print actions">
+      <button class="btn primary" id="btn-print">Imprimer / PDF</button>
+      <button class="btn" id="btn-csv">Export CSV</button>
+      <button class="btn ghost" id="btn-copy-paje">Copier le récap Pajemploi</button>
+    </div>
+
+    <div id="paie-content"></div>
+  </section>
+
+  <!-- ============ PARAMÈTRES ============ -->
+  <section id="vue-params" class="view" role="tabpanel">
+    <form id="form-params" autocomplete="off">
+
+      <div class="card">
+        <h2>Identité</h2>
+        <div class="grid2">
+          <label>Enfant<input type="text" name="enfant" placeholder="Prénom"></label>
+          <label>Assistante maternelle<input type="text" name="assmat" placeholder="Nom"></label>
+          <label class="span2">Employeur (parent)<input type="text" name="employeur" placeholder="Nom"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Rémunération</h2>
+        <div class="grid2">
+          <label>Taux horaire
+            <input type="number" name="tauxSaisi" step="0.01" min="0" inputmode="decimal">
+          </label>
+          <label>Ce taux est
+            <select name="tauxType">
+              <option value="brut">Brut</option>
+              <option value="net">Net</option>
+            </select>
+          </label>
+          <label>Cotisations salariales (%)
+            <input type="number" name="tauxCotisations" step="0.1" min="0" max="60" inputmode="decimal">
+            <small>≈ 22 %. Sert à convertir brut ⇄ net. Estimation : Pajemploi fait foi.</small>
+          </label>
+          <label class="readout">Équivalence
+            <output id="taux-readout">—</output>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Contrat</h2>
+        <div class="grid2">
+          <label class="span2">Mode de paiement
+            <select name="mode">
+              <option value="mensualisation">Mensualisation (salaire lissé + heures complémentaires)</option>
+              <option value="reel">Paiement au réel (heures réellement effectuées)</option>
+            </select>
+          </label>
+          <label>Heures / semaine<input type="number" name="heuresSemaine" step="0.25" min="0" inputmode="decimal"></label>
+          <label>Jours / semaine<input type="number" name="joursSemaine" step="1" min="0" max="7" inputmode="numeric"></label>
+          <label>Semaines / an
+            <input type="number" name="semainesAn" step="1" min="1" max="52" inputmode="numeric">
+            <small>52 = année complète.</small>
+          </label>
+          <label class="readout">Salaire mensualisé
+            <output id="mens-readout">—</output>
+          </label>
+          <label>Seuil de majoration (h/sem.)<input type="number" name="seuilMajoration" step="0.25" min="0" inputmode="decimal"></label>
+          <label>Heures au 1<sup>er</sup> palier<input type="number" name="heuresMaj1" step="1" min="0" inputmode="numeric"></label>
+          <label>Majoration 1<sup>er</sup> palier (%)<input type="number" name="majoration1" step="1" min="0" inputmode="numeric"></label>
+          <label>Majoration au-delà (%)<input type="number" name="majoration2" step="1" min="0" inputmode="numeric"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Indemnités d’entretien</h2>
+        <div class="grid2">
+          <label class="span2">Calcul
+            <select name="entretienMode">
+              <option value="bareme">Barème horaire avec plancher et plafond</option>
+              <option value="fixe">Montant fixe par jour d’accueil</option>
+              <option value="aucun">Aucune indemnité</option>
+            </select>
+          </label>
+          <label data-when="bareme">Tarif horaire (€/h)<input type="number" name="entretienTauxH" step="0.005" min="0" inputmode="decimal"></label>
+          <label data-when="bareme">Plancher / jour (€)<input type="number" name="entretienMin" step="0.01" min="0" inputmode="decimal"></label>
+          <label data-when="bareme">Plafond / jour (€)<input type="number" name="entretienMax" step="0.01" min="0" inputmode="decimal"></label>
+          <label data-when="fixe">Montant / jour (€)<input type="number" name="entretienFixe" step="0.01" min="0" inputmode="decimal"></label>
+        </div>
+        <p class="muted" data-when="bareme">Barème 2026 : 2,65 € en dessous de 6 h 15, 0,425 €/h ensuite, 3,83 € à partir de 9 h.</p>
+      </div>
+
+      <div class="card">
+        <h2>Repas</h2>
+        <div id="repas-params" class="repas-params"></div>
+      </div>
+
+      <div class="card">
+        <h2>Options</h2>
+        <label class="switch">
+          <input type="checkbox" name="kmActif"><span>Frais kilométriques</span>
+        </label>
+        <label data-when="km">Tarif (€/km)<input type="number" name="kmTarif" step="0.01" min="0" inputmode="decimal"></label>
+        <label class="switch">
+          <input type="checkbox" name="cpActif"><span>Ligne « indemnité de congés payés » sur la fiche</span>
+        </label>
+        <label data-when="cp">Taux (%)<input type="number" name="cpTaux" step="0.5" min="0" inputmode="decimal"></label>
+      </div>
+
+      <div class="card">
+        <h2>Journée type</h2>
+        <p class="muted">Valeurs proposées par défaut lors de la saisie d’une journée.</p>
+        <div class="grid2">
+          <label>Heures<input type="number" name="typeHeures" step="0.25" min="0" max="24" inputmode="decimal"></label>
+        </div>
+        <div id="type-repas" class="repas-params"></div>
+      </div>
+
+      <div class="card">
+        <h2>Données</h2>
+        <p class="muted">Tout est stocké sur cet appareil uniquement. Pensez à exporter de temps en temps.</p>
+        <div class="row wrap">
+          <button type="button" class="btn" id="btn-export">Exporter la sauvegarde</button>
+          <button type="button" class="btn" id="btn-import">Importer…</button>
+          <input type="file" id="file-import" accept="application/json,.json" hidden>
+          <button type="button" class="btn danger ghost" id="btn-reset">Tout effacer</button>
+        </div>
+        <p class="muted" id="storage-info"></p>
+      </div>
+    </form>
+  </section>
+</main>
+
+<!-- ============ ÉDITEUR DE JOURNÉE ============ -->
+<dialog id="dlg-jour">
+  <form method="dialog" id="form-jour">
+    <header class="dlg-head">
+      <div>
+        <h2 id="dlg-titre">—</h2>
+        <p class="muted" id="dlg-sub">—</p>
+      </div>
+      <button class="btn icon ghost" value="cancel" aria-label="Fermer">✕</button>
+    </header>
+
+    <div class="dlg-body">
+      <fieldset>
+        <legend>Statut</legend>
+        <div class="chips" id="dlg-statut"></div>
+      </fieldset>
+
+      <fieldset id="fs-heures">
+        <legend>Heures de présence</legend>
+        <div class="stepper">
+          <button type="button" class="btn icon" data-h="-0.25" aria-label="Retirer 15 minutes">−</button>
+          <input type="number" id="dlg-heures" step="0.25" min="0" max="24" inputmode="decimal">
+          <button type="button" class="btn icon" data-h="0.25" aria-label="Ajouter 15 minutes">+</button>
+        </div>
+        <div class="chips" id="dlg-heures-quick"></div>
+        <p class="muted" id="dlg-entretien">—</p>
+      </fieldset>
+
+      <fieldset id="fs-repas">
+        <legend>Repas</legend>
+        <div id="dlg-repas" class="counters"></div>
+      </fieldset>
+
+      <fieldset id="fs-km" hidden>
+        <legend>Kilomètres</legend>
+        <input type="number" id="dlg-km" step="1" min="0" inputmode="numeric">
+      </fieldset>
+
+      <label>Note<input type="text" id="dlg-note" maxlength="120" placeholder="facultatif"></label>
+    </div>
+
+    <footer class="dlg-foot">
+      <button class="btn danger ghost" value="delete" type="submit" formnovalidate>Effacer</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" value="cancel" type="submit" formnovalidate>Annuler</button>
+      <button class="btn primary" value="save" type="submit">Enregistrer</button>
+    </footer>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/calc.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
