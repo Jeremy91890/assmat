@@ -126,7 +126,8 @@
 
       cells.push(
         `<button type="button" class="${classes.join(' ')}" data-date="${date}" ` +
-        `aria-label="${Calc.fmtJour(date)}"><span class="n">${d}</span>${contenu}${dots}</button>`
+        `aria-label="${etiquette(date, statut, heures, nbRepas)}">` +
+        `<span class="n">${d}</span>${contenu}${dots}</button>`
       );
 
       if (dow === 6) pousseSomme();                          // dimanche : fin de ligne
@@ -143,9 +144,20 @@
     $('#cal-grid').innerHTML = cells.join('');
   }
 
+  /* Abréviations tenant dans une case du calendrier ; l'étiquette vocale, elle,
+     donne le libellé complet. */
   const abbrev = statut => ({
-    absent: 'abs.', conge: 'congé', ferie: 'férié', maladie: 'malad.'
+    absent: 'abs', conge: 'congé', ferie: 'férié', maladie: 'mal'
   }[statut] || '');
+
+  /** Étiquette lue par les lecteurs d'écran : date, puis état de la journée. */
+  function etiquette(date, statut, heures, nbRepas) {
+    const jour = Calc.fmtJour(date);
+    if (!statut) return `${jour} — non saisi`;
+    if (statut !== 'present') return `${jour} — ${(Calc.ABSENCES[statut] || {}).label || statut}`;
+    const repas = nbRepas ? `, ${nbRepas} repas` : '';
+    return `${jour} — ${Calc.fmtH(heures)}${repas}`;
+  }
 
   $('#cal-grid').addEventListener('click', e => {
     const btn = e.target.closest('.day[data-date]');

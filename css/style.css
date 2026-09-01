@@ -405,31 +405,31 @@ legend {
   font-family: 'Nunito Sans', sans-serif;
   /* Hauteur fixe plutôt qu'un ratio : un ratio impose une largeur intrinsèque
      que les colonnes 1fr, plus étroites, ne peuvent pas contenir. */
-  height: 48px; min-width: 0;
+  height: 40px; min-width: 0;
   border: 1.5px solid transparent; border-radius: var(--r);
   background: var(--surf-low); color: var(--on-surface);
-  padding: 4px 1px 3px;
+  padding: 3px 1px 1px;
   display: flex; flex-direction: column; align-items: center;
   position: relative; overflow: hidden;
   transition: background-color .18s ease, border-color .18s ease;
 }
-@media (min-width: 700px) { .day { height: 56px; padding: 6px 2px 5px; } }
+@media (min-width: 700px) { .day { height: 46px; padding: 4px 2px 3px; } }
 .day:hover { border-color: var(--primary-fixed-dim); }
 .day.is-we { background: var(--surf-high); }
 .day.is-out { visibility: hidden; }
 .day.is-today { border-color: var(--primary); border-width: 2.5px; }
 .day .n {
-  font-size: 12px; line-height: 15px; font-weight: 700;
+  font-size: 11px; line-height: 13px; font-weight: 700;
   color: var(--on-surface-variant);
 }
 .day.is-today .n { color: var(--primary); }
 .day .h {
   font-family: 'Quicksand', sans-serif;
-  font-size: 12.5px; line-height: 16px; font-weight: 700;
+  font-size: 12px; line-height: 14px; font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.day .dots { display: flex; gap: 2px; height: 5px; margin-top: auto; }
-.day .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--secondary-fixed-dim); }
+.day .dots { display: flex; gap: 2px; height: 4px; margin-top: auto; }
+.day .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--secondary-fixed-dim); }
 
 /* Journée saisie : bleu ciel. Absence : rose poudré, jamais alarmant. */
 .day.filled { background: var(--primary-container); }
@@ -439,7 +439,7 @@ legend {
 .day.off .n { color: var(--secondary); }
 .day.off .h {
   font-family: 'Nunito Sans', sans-serif;
-  font-size: 9.5px; line-height: 13px; letter-spacing: .02em;
+  font-size: 9px; line-height: 12px; letter-spacing: .01em;
   color: var(--secondary); text-transform: uppercase;
 }
 
