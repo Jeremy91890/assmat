@@ -69,8 +69,10 @@ function sdSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(wx - vx * t, wy - vy * t);
 }
 
-const TEAL_HI = [0x4a, 0x87, 0x72];
-const TEAL_LO = [0x24, 0x50, 0x3f];
+/* Palette Nurture Payroll : fond bleu ciel (primary-container), glyphe ardoise (primary). */
+const SKY_HI  = [0xea, 0xf6, 0xff];
+const SKY_LO  = [0xc7, 0xe3, 0xf9];
+const SLATE   = [0x50, 0x61, 0x6b];
 
 /** Couleur du pixel en coordonnées normalisées (0..1). Renvoie [r, g, b, a]. */
 function sample(x, y, opts) {
@@ -79,10 +81,10 @@ function sample(x, y, opts) {
 
   // Fond dégradé en diagonale.
   const t = clamp01((x * 0.35 + y * 0.65));
-  let col = [mix(TEAL_HI[0], TEAL_LO[0], t), mix(TEAL_HI[1], TEAL_LO[1], t), mix(TEAL_HI[2], TEAL_LO[2], t)];
+  let col = [mix(SKY_HI[0], SKY_LO[0], t), mix(SKY_HI[1], SKY_LO[1], t), mix(SKY_HI[2], SKY_LO[2], t)];
 
   const R = opts.glyph;                       // rayon de l'horloge
-  const trait = R * 0.13;
+  const trait = R * 0.15;                     // traits épais, extrémités arrondies
   const d = Math.hypot(x - 0.5, y - 0.5);
 
   // Cadran : anneau + deux aiguilles + point central.
@@ -92,7 +94,7 @@ function sample(x, y, opts) {
     const h2 = sdSegment(x, y, 0.5, 0.5, 0.5 + R * 0.42, 0.5 + R * 0.24); // petite aiguille (≈ 4 h)
     encre = h1 < trait / 2 || h2 < trait / 2 || d < trait * 0.75;
   }
-  if (encre) col = [255, 255, 255];
+  if (encre) col = SLATE;
 
   return [col[0], col[1], col[2], 1];
 }
@@ -125,9 +127,9 @@ fs.mkdirSync(out, { recursive: true });
 
 const jobs = [
   // Icônes « any » : coins arrondis, glyphe généreux.
-  ['icon-192.png',          192, { radius: 0.22, glyph: 0.27 }],
-  ['icon-512.png',          512, { radius: 0.22, glyph: 0.27 }],
-  ['apple-touch-icon.png',  180, { radius: 0.22, glyph: 0.27 }],
+  ['icon-192.png',          192, { radius: 0.26, glyph: 0.27 }],
+  ['icon-512.png',          512, { radius: 0.26, glyph: 0.27 }],
+  ['apple-touch-icon.png',  180, { radius: 0.26, glyph: 0.27 }],
   // Icônes « maskable » : pleine surface, glyphe dans la zone sûre (80 % centraux).
   ['maskable-192.png',      192, { radius: 0,    glyph: 0.20 }],
   ['maskable-512.png',      512, { radius: 0,    glyph: 0.20 }]

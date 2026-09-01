@@ -531,6 +531,7 @@
             : 'Paiement au réel'}</p></div>
         </div>
 
+        <div class="paie-t-wrap">
         <table class="paie-t">
           <caption>Rémunération</caption>
           <thead><tr><th>Libellé</th><th class="num">Nombre</th><th class="num">Taux</th><th class="num">Montant</th></tr></thead>
@@ -541,15 +542,18 @@
             <tr class="sub"><td colspan="3">Salaire net</td><td class="num">${Calc.fmtEur(r.netSalaire)}</td></tr>
           </tbody>
         </table>
+        </div>
 
         ${indemLignes.length ? `
+        <div class="paie-t-wrap">
         <table class="paie-t">
           <caption>Indemnités — non soumises à cotisations</caption>
           <tbody>
             ${indemLignes.map(x => `<tr><td>${x.l}</td><td class="num">${Calc.fmtEur(x.v)}</td></tr>`).join('')}
             <tr class="sub"><td>Total des indemnités</td><td class="num">${Calc.fmtEur(r.indemnites)}</td></tr>
           </tbody>
-        </table>` : ''}
+        </table>
+        </div>` : ''}
 
         <div class="net-final">
           <span>Net à payer à l’assistante maternelle</span>
@@ -569,11 +573,13 @@
         </div>
 
         ${r.semaines.length ? `
+        <div class="paie-t-wrap">
         <table class="paie-t">
           <caption>Détail par semaine</caption>
           <thead><tr><th>Semaine</th><th class="num">Jours</th><th class="num">Heures</th><th class="num">Compl.</th><th class="num">Majorées</th></tr></thead>
           <tbody>${semainesHtml}</tbody>
-        </table>` : ''}
+        </table>
+        </div>` : ''}
 
         ${avertissements.map(a => `<p class="warn">${a}</p>`).join('')}
       </article>`;

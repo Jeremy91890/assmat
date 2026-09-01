@@ -57,6 +57,32 @@ Deux points à connaître :
 - Le passage brut → net est une **estimation** à taux unique. Les cotisations réelles dépendent
   de la situation de l'employeur ; Pajemploi fait foi.
 
+## Design system
+
+L'interface applique le design system **Nurture Payroll** (`Soft Minimalism`) : pastels
+haute luminance, formes très arrondies, ombres presque absentes, respiration généreuse.
+
+| | |
+|---|---|
+| Bleu ciel | zones de calcul, jours saisis, actions principales |
+| Rose poudré | informations personnelles, absences, repas |
+| Vert menthe | résultats : net à payer, totaux hebdomadaires |
+| Jaune soleil | attention bienveillante : champ actif, dépassement du seuil, récap Pajemploi |
+
+Typographie : **Quicksand** pour les titres et tous les montants, **Nunito Sans** pour le
+texte courant et les formulaires. Les deux familles sont des polices variables
+**auto-hébergées** dans `fonts/` (59 Ko au total) et mises en cache par le service worker :
+aucune requête vers un CDN, l'application garde son rendu hors ligne.
+
+Trois écarts assumés par rapport au document de référence :
+
+- Le design system ne fournit **qu'une palette claire**. L'application est donc en clair
+  uniquement (`color-scheme: light`), sans thème sombre.
+- Le **jaune soleil** est nommé dans la prose mais aucun jeton ne l'accompagne : les valeurs
+  (`--quaternary*`) ont été dérivées dans l'esprit de la palette.
+- Les paddings de carte (48 px) et les tailles de titre sont **réduits sous 700 px** ; à
+  pleine valeur, il ne restait pas assez de place pour le contenu sur un écran de téléphone.
+
 ## Développement
 
 Aucune dépendance, aucune étape de build.
@@ -72,3 +98,5 @@ node tools/gen-icons.js    # régénère les icônes PNG
 | `js/store.js` | persistance, import/export JSON et CSV |
 | `js/app.js` | interface : calendrier, éditeur de journée, paramètres, fiche de paie |
 | `sw.js` | service worker (app shell en cache, fonctionnement hors ligne) |
+| `css/style.css` | design system Nurture Payroll : jetons, composants, impression |
+| `fonts/` | Quicksand et Nunito Sans, polices variables auto-hébergées |

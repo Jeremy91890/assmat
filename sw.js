@@ -1,7 +1,7 @@
 /* Service worker : l'application fonctionne entièrement hors ligne.
    Aucune donnée n'est envoyée sur le réseau — le cache ne sert qu'aux fichiers de l'app. */
 
-const VERSION = 'assmat-v1';
+const VERSION = 'assmat-v2';
 const SHELL = [
   './',
   './index.html',
@@ -10,14 +10,18 @@ const SHELL = [
   './js/store.js',
   './js/app.js',
   './manifest.webmanifest',
+  './fonts/quicksand-latin.woff2',
+  './fonts/nunito-sans-latin.woff2',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
+  // `cache: 'reload'` force le passage par le réseau : sans cela, une mise à jour
+  // pourrait réinstaller les fichiers périmés encore présents dans le cache HTTP.
   e.waitUntil(
     caches.open(VERSION)
-      .then(c => c.addAll(SHELL))
+      .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
