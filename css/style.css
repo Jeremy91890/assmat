@@ -471,6 +471,8 @@ legend {
 /* ---------- Repas (paramètres) ---------- */
 
 .repas-params { display: flex; flex-direction: column; gap: var(--stack-sm); }
+/* Le bloc des repas suit directement une grille de champs : on rétablit le rythme vertical. */
+.grid2 + .repas-params { margin-top: var(--stack-md); }
 .repas-line {
   display: grid; grid-template-columns: 22px 1fr 96px; align-items: center; gap: 10px;
   padding: 10px 14px;
@@ -652,6 +654,12 @@ table.paie-t tr.neg td { color: var(--error); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Étapes d'installation (iOS) ---------- */
+.install-steps { margin: 0; padding-left: 1.25em; display: grid; gap: var(--stack-sm); }
+.install-steps li { line-height: 1.5; }
+.ico-share { width: 1.05em; height: 1.05em; vertical-align: -.18em; }
+.install-note { margin-top: var(--stack-md); }
 
 /* ---------- Impression ---------- */
 

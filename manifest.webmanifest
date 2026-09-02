@@ -1,6 +1,6 @@
 {
-  "name": "Assmat — suivi & fiche de paie",
-  "short_name": "Assmat",
+  "name": "Pay Assmat — suivi & fiche de paie",
+  "short_name": "Pay Assmat",
   "description": "Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.",
   "lang": "fr",
   "dir": "ltr",

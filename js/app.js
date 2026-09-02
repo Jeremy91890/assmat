@@ -448,7 +448,7 @@
 
   $('#btn-export').addEventListener('click', () => {
     const d = new Date().toISOString().slice(0, 10);
-    Store.download(`assmat-sauvegarde-${d}.json`, Store.exportJSON(), 'application/json');
+    Store.download(`pay-assmat-sauvegarde-${d}.json`, Store.exportJSON(), 'application/json');
     toast('Sauvegarde téléchargée.');
   });
 
@@ -607,7 +607,7 @@
 
   $('#btn-csv').addEventListener('click', () => {
     const r = Calc.month(moisPaie, days, settings);
-    Store.download(`assmat-${moisPaie}.csv`, Store.exportCSV(r, settings), 'text/csv');
+    Store.download(`pay-assmat-${moisPaie}.csv`, Store.exportCSV(r, settings), 'text/csv');
     toast('CSV téléchargé.');
   });
 
@@ -638,6 +638,14 @@
       navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW non enregistré', e)));
   }
 
+  // iOS n'implémente pas `beforeinstallprompt` : Safari comme Chrome passent par le
+  // menu Partager. On affiche donc le bouton d'emblée avec la marche à suivre.
+  const estIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS se déclare macOS
+  const dejaInstalle = () =>
+    window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+
   let promptInstall = null;
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
@@ -645,8 +653,10 @@
     $('#btn-install').hidden = false;
   });
 
+  if (estIOS && !dejaInstalle()) $('#btn-install').hidden = false;
+
   $('#btn-install').addEventListener('click', async () => {
-    if (!promptInstall) return;
+    if (!promptInstall) { $('#dlg-install').showModal(); return; }
     promptInstall.prompt();
     await promptInstall.userChoice;
     promptInstall = null;

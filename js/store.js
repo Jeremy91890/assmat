@@ -72,7 +72,7 @@ const Store = (() => {
     try { data = JSON.parse(text); }
     catch { return { ok: false, message: 'Fichier illisible (JSON invalide).' }; }
     if (!data || typeof data !== 'object' || (!data.days && !data.settings)) {
-      return { ok: false, message: 'Ce fichier ne ressemble pas à une sauvegarde Assmat.' };
+      return { ok: false, message: 'Ce fichier ne ressemble pas à une sauvegarde Pay Assmat.' };
     }
     if (data.settings) saveSettings({ ...Calc.DEFAULTS, ...data.settings });
     if (data.days) saveDays(data.days);

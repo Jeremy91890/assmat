@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Assmat — suivi & fiche de paie</title>
+<title>Pay Assmat — suivi & fiche de paie</title>
 <meta name="description" content="Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.">
 <meta name="theme-color" content="#f8f9ff">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Assmat">
+<meta name="apple-mobile-web-app-title" content="Pay Assmat">
 <link rel="preload" href="fonts/quicksand-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
@@ -23,7 +23,7 @@
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.8l3.4 2"/></svg></span>
       <span>
-        <strong>Assmat</strong>
+        <strong>Pay Assmat</strong>
         <em id="brand-sub">Suivi de garde</em>
       </span>
     </div>
@@ -262,6 +262,33 @@
       <span class="spacer"></span>
       <button class="btn ghost" value="cancel" type="submit" formnovalidate>Annuler</button>
       <button class="btn primary" value="save" type="submit">Enregistrer</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ============ INSTALLATION (iOS) ============ -->
+<dialog id="dlg-install">
+  <form method="dialog">
+    <header class="dlg-head">
+      <div>
+        <h2>Installer Pay Assmat</h2>
+        <p class="muted">Ajoutez l'application à votre écran d'accueil.</p>
+      </div>
+      <button class="btn icon ghost" value="cancel" aria-label="Fermer">✕</button>
+    </header>
+
+    <div class="dlg-body">
+      <ol class="install-steps">
+        <li>Touchez le bouton <strong>Partager</strong> <svg class="ico-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/><path d="M6 11H4.5v9.5h15V11H18"/></svg> dans la barre du navigateur.</li>
+        <li>Faites défiler puis choisissez <strong>« Sur l'écran d'accueil »</strong>.</li>
+        <li>Confirmez avec <strong>Ajouter</strong>.</li>
+      </ol>
+      <p class="muted install-note" id="install-note">Sur iPhone, l'installation passe toujours par le menu Partager : aucun navigateur ne propose de bouton automatique.</p>
+    </div>
+
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button class="btn primary" value="ok" type="submit">J'ai compris</button>
     </footer>
   </form>
 </dialog>

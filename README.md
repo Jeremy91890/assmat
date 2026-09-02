@@ -1,4 +1,4 @@
-# Assmat — suivi de garde & fiche de paie
+# Pay Assmat — suivi de garde & fiche de paie
 
 Application web installable (PWA) pour suivre les journées de garde d'un enfant chez son
 assistante maternelle et produire la fiche de paie mensuelle.
