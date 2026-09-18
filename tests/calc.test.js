@@ -19,13 +19,19 @@ test('année incomplète (47 semaines) = 641,55 €', () => {
 });
 
 console.log('\nTaux horaire brut / net');
-test('brut 3,64 € à 22 % → net 2,8392 €', () => {
-  assert.strictEqual(Calc.tauxHoraire(S()).net, 2.8392);
+test('brut 3,64 € à 22 % → net 2,839 € (arrondi au millième)', () => {
+  assert.strictEqual(Calc.tauxHoraire(S()).net, 2.839);
 });
-test('saisie en net : 2,84 € net → 3,641 € brut', () => {
+test('saisie brut à 3 décimales conservée telle quelle', () => {
+  assert.strictEqual(Calc.tauxHoraire(S({ tauxSaisi: 3.645 })).brut, 3.645);
+});
+test('saisie en net : 2,84 € net → 3,641 € brut (arrondi au millième)', () => {
   const t = Calc.tauxHoraire(S({ tauxType: 'net', tauxSaisi: 2.84 }));
   assert.strictEqual(t.net, 2.84);
-  assert.ok(Math.abs(t.brut - 3.641) < 0.001, `brut = ${t.brut}`);
+  assert.strictEqual(t.brut, 3.641);
+});
+test('saisie en net à 3 décimales conservée telle quelle', () => {
+  assert.strictEqual(Calc.tauxHoraire(S({ tauxType: 'net', tauxSaisi: 2.845 })).net, 2.845);
 });
 
 console.log('\nIndemnités d’entretien (barème 2026)');

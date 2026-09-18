@@ -402,7 +402,7 @@
 
   function renderReadouts() {
     const t = Calc.tauxHoraire(settings);
-    $('#taux-readout').textContent = `${Calc.fmtEur(t.brut)} brut = ${Calc.fmtEur(t.net)} net /h`;
+    $('#taux-readout').textContent = `${Calc.fmtEurTaux(t.brut)} brut = ${Calc.fmtEurTaux(t.net)} net /h`;
     const m = Calc.salaireMensualise(settings);
     $('#mens-readout').textContent = settings.mode === 'mensualisation'
       ? `${Calc.fmtEur(m.brut)} brut — ${Calc.fmtEur(m.net)} net (${Calc.fmtH(m.heures)}/mois)`

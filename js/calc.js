@@ -117,6 +117,7 @@ const Calc = (() => {
 
   /** Arrondi comptable à 2 décimales (demi vers le haut, insensible au flottant). */
   const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+  const r3 = n => Math.round((n + Number.EPSILON) * 1000) / 1000;
   const r4 = n => Math.round((n + Number.EPSILON) * 10000) / 10000;
 
   /* ---------- Taux horaire ---------- */
@@ -127,9 +128,9 @@ const Calc = (() => {
     const saisi = Number(s.tauxSaisi) || 0;
     if (s.tauxType === 'net') {
       const brut = c >= 1 ? saisi : saisi / (1 - c);
-      return { brut: r4(brut), net: r4(saisi) };
+      return { brut: r3(brut), net: saisi };
     }
-    return { brut: r4(saisi), net: r4(saisi * (1 - c)) };
+    return { brut: saisi, net: r3(saisi * (1 - c)) };
   }
 
   /** Salaire mensualisé brut = taux × heures/semaine × semaines/an ÷ 12. */
@@ -320,9 +321,11 @@ const Calc = (() => {
   /* ---------- Formatage ---------- */
 
   const nfEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  const nfEur3 = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 3, maximumFractionDigits: 3 });
   const nfNum = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const fmtEur = n => nfEur.format(r2(Number(n) || 0));
+  const fmtEurTaux = n => nfEur3.format(r3(Number(n) || 0));
   const fmtNum = n => nfNum.format(Number(n) || 0);
 
   /** Heures : « 9 h », « 9 h 30 ». */
@@ -350,9 +353,9 @@ const Calc = (() => {
   return {
     DEFAULTS, ABSENCES, MOIS,
     isoDate, parseISO, monthKey, weekKey, daysOfMonth, shiftMonth,
-    r2, r4, tauxHoraire, salaireMensualise, heuresMensualisees,
+    r2, r3, r4, tauxHoraire, salaireMensualise, heuresMensualisees,
     entretienJour, weeks, month,
-    fmtEur, fmtNum, fmtH, fmtMois, fmtJour
+    fmtEur, fmtEurTaux, fmtNum, fmtH, fmtMois, fmtJour
   };
 })();
 
