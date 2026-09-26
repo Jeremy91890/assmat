@@ -1,7 +1,7 @@
 {
   "name": "Pay Assmat — suivi & fiche de paie",
   "short_name": "Pay Assmat",
-  "description": "Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.",
+  "description": "Calcul du salaire d'une assistante maternelle : suivi des heures de garde, fiche de paie mensuelle et montants à déclarer sur Pajemploi.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "./index.html",

@@ -3,8 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pay Assmat — suivi & fiche de paie</title>
-<meta name="description" content="Suivi des heures de garde chez l'assistante maternelle et génération de la fiche de paie mensuelle.">
+<title>Calcul salaire assistante maternelle 2026 — simulateur gratuit | Pay Assmat</title>
+<meta name="description" content="Calculez gratuitement le salaire de votre assistante maternelle : mensualisation, heures complémentaires et majorées, indemnités d’entretien et de repas, congés payés, montants à déclarer sur Pajemploi. Sans inscription, sans cookie.">
+<link rel="canonical" href="https://pay-assmat.fr/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Jérémy Debelleix">
+
+<!-- Aperçus de partage (réseaux sociaux, messageries) -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Pay Assmat">
+<meta property="og:url" content="https://pay-assmat.fr/">
+<meta property="og:title" content="Calcul du salaire d’une assistante maternelle — Pay Assmat">
+<meta property="og:description" content="Simulateur gratuit : salaire mensualisé, heures, indemnités, congés payés et déclaration Pajemploi. Vos données restent sur votre appareil.">
+<meta property="og:image" content="https://pay-assmat.fr/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pay Assmat, calcul du salaire d’assistante maternelle">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Données structurées : Google comprend qu'il s'agit d'une application gratuite -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Pay Assmat",
+  "url": "https://pay-assmat.fr/",
+  "description": "Simulateur de salaire d’assistante maternelle : mensualisation, heures complémentaires et majorées, indemnités d’entretien et de repas, congés payés, régularisation et déclaration Pajemploi.",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Tous (navigateur web, installable)",
+  "inLanguage": "fr-FR",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "author": { "@type": "Person", "name": "Jérémy Debelleix" }
+}
+</script>
 <meta name="theme-color" content="#f8f9ff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
@@ -28,7 +61,7 @@
       </span>
     </div>
     <a class="btn ghost sm btn-don" href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="entete" aria-label="Faire un don pour soutenir l’app"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 6.9 4.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg><span>Soutenir</span></a>
-    <button id="btn-install" class="btn ghost sm" hidden>Installer l'application</button>
+    <button id="btn-install" class="btn ghost sm btn-install" hidden aria-label="Installer l’application"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span class="lbl-long">Installer l’application</span><span class="lbl-court">Installer</span></button>
   </div>
 </header>
 
@@ -45,6 +78,10 @@
     <span class="tab-pill"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span>
     <span class="tab-lbl">Paramètres</span>
   </button>
+  <a class="tab" href="guide/" data-nav="guide">
+    <span class="tab-pill"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg></span>
+    <span class="tab-lbl">Guide</span>
+  </a>
 </nav>
 
 <main>
@@ -54,7 +91,7 @@
     <div class="monthnav">
       <button class="btn icon" id="mois-prev" aria-label="Mois précédent">‹</button>
       <div class="monthnav-label">
-        <h1 id="mois-titre">—</h1>
+        <h2 id="mois-titre" class="titre-mois">—</h2>
         <button class="btn ghost xs" id="mois-today">Aujourd’hui</button>
       </div>
       <button class="btn icon" id="mois-next" aria-label="Mois suivant">›</button>
@@ -96,7 +133,7 @@
   <section id="vue-paie" class="view" role="tabpanel">
     <div class="monthnav no-print">
       <button class="btn icon" id="paie-prev" aria-label="Mois précédent">‹</button>
-      <div class="monthnav-label"><h1 id="paie-titre">—</h1></div>
+      <div class="monthnav-label"><h2 id="paie-titre" class="titre-mois">—</h2></div>
       <button class="btn icon" id="paie-next" aria-label="Mois suivant">›</button>
     </div>
 
@@ -260,13 +297,26 @@
 
       <div class="card card-don">
         <h2>Soutenir l’app</h2>
-        <p class="muted">Pay Assmat est gratuite, sans publicité ni cookie, et vos données restent sur votre appareil. Si elle vous fait gagner du temps chaque mois, un petit don aide à la maintenir à jour des barèmes et de la convention collective.</p>
+        <p class="muted">Pay Assmat est gratuite, sans publicité ni cookie, et vos données restent sur votre appareil. Si elle vous fait gagner du temps chaque mois, un petit don aide à la maintenir.</p>
         <a class="btn primary" href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="parametres"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 6.9 4.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg><span>Offrir un café</span></a>
         <p class="muted small">Paiement sécurisé sur Buy Me a Coffee : l’app ne reçoit aucune information.</p>
       </div>
     </form>
   </section>
 </main>
+
+<footer class="site-foot no-print">
+  <p class="foot-brand"><strong>Pay Assmat</strong> · suivi de garde et fiche de paie d’assistante maternelle</p>
+  <p>Calculs fondés sur la convention collective des particuliers employeurs (barèmes 2026), donnés à titre indicatif : <strong>Pajemploi fait foi</strong>.</p>
+  <p>Vos données restent sur cet appareil. Aucun cookie ; mesure d’audience anonyme avec GoatCounter.</p>
+  <p class="foot-links">
+    <a href="guide/">Guide du salaire d’assmat</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="footer">Soutenir l’app</a>
+    <span aria-hidden="true">·</span>
+    <span>© <span id="foot-annee">2026</span> Jérémy Debelleix</span>
+  </p>
+</footer>
 
 <!-- ============ ÉDITEUR DE JOURNÉE ============ -->
 <dialog id="dlg-jour">

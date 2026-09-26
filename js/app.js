@@ -32,6 +32,8 @@
 
   /* ---------- Dons ---------- */
 
+  $('#foot-annee').textContent = new Date().getFullYear();
+
   // Lien externe simple : seul le clic est compté (sans donnée personnelle).
   $$('[data-don]').forEach(a => a.addEventListener('click', () => Analytics.event(`don-${a.dataset.don}`)));
 
@@ -48,10 +50,21 @@
     window.scrollTo({ top: 0 });
   }
 
-  $$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab[data-view]').forEach(t => t.addEventListener('click', () => {
     showView(t.dataset.view);
+    history.replaceState(null, '', `#${t.dataset.view}`);
     Analytics.event(`onglet-${t.dataset.view}`);
   }));
+
+  // L'onglet Guide est une page à part : on le compte avant de quitter l'app.
+  $$('.tab[data-nav]').forEach(a => a.addEventListener('click', () => Analytics.event(`onglet-${a.dataset.nav}`)));
+
+  /** Vue demandée par l'adresse (#calendrier, #paie, #params) : liens du guide, raccourci du manifest. */
+  const vueDeLAdresse = () => {
+    const v = location.hash.slice(1);
+    if (['calendrier', 'paie', 'params'].includes(v)) showView(v);
+  };
+  window.addEventListener('hashchange', vueDeLAdresse);
 
   /* ================= CALENDRIER ================= */
 
@@ -755,6 +768,7 @@
   renderParams();
   renderCalendrier();
   renderPaie();   // la fiche doit exister même si l'onglet n'a pas été ouvert (impression directe)
+  vueDeLAdresse();
 
   // Une impression déclenchée depuis un autre onglet doit porter sur des chiffres à jour.
   window.addEventListener('beforeprint', renderPaie);

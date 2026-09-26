@@ -2,7 +2,7 @@
    Les données saisies ne sont jamais envoyées sur le réseau — le cache ne sert qu'aux
    fichiers de l'app. La mesure d'audience (GoatCounter, autre origine) n'est pas interceptée. */
 
-const VERSION = 'pay-assmat-v15';
+const VERSION = 'pay-assmat-v22';
 const SHELL = [
   './',
   './index.html',
@@ -42,15 +42,17 @@ self.addEventListener('activate', e => {
  * revalide auprès du serveur (ETag) au lieu de reprendre une copie du cache HTTP.
  * Au-delà de 4 s sans réponse (réseau très lent), on sert la copie locale.
  */
-function reseauDabord(req, cle = req) {
+function reseauDabord(req, repli = null) {
   const reseau = fetch(req, { cache: 'no-cache' }).then(res => {
     if (res.ok && res.type === 'basic') {
       const copy = res.clone();
-      caches.open(VERSION).then(c => c.put(cle, copy));
+      caches.open(VERSION).then(c => c.put(req, copy));
     }
     return res;
   });
-  const secours = () => caches.match(cle).then(hit => hit || reseau);
+  const secours = () => caches.match(req, { ignoreSearch: true })
+    .then(hit => hit || (repli && caches.match(repli)))
+    .then(hit => hit || reseau);
   const delai = new Promise(r => setTimeout(r, 4000)).then(secours);
   return Promise.race([reseau.catch(secours), delai]);
 }
@@ -58,6 +60,7 @@ function reseauDabord(req, cle = req) {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  // Les navigations retombent toutes sur index.html (application monopage).
-  e.respondWith(reseauDabord(req, req.mode === 'navigate' ? './index.html' : req));
+  // Chaque page est mise en cache sous sa propre adresse ; hors ligne, une page jamais
+  // visitée retombe sur l'application.
+  e.respondWith(reseauDabord(req, req.mode === 'navigate' ? './index.html' : null));
 });
