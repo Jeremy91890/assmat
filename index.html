@@ -27,7 +27,8 @@
         <em id="brand-sub">Suivi de garde</em>
       </span>
     </div>
-    <button id="btn-install" class="btn ghost sm" hidden>Installer</button>
+    <a class="btn ghost sm btn-don" href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="entete" aria-label="Faire un don pour soutenir l’app"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 6.9 4.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg><span>Soutenir</span></a>
+    <button id="btn-install" class="btn ghost sm" hidden>Installer l'application</button>
   </div>
 </header>
 
@@ -155,7 +156,7 @@
           </label>
           <label class="span2" data-when="mensualisation">Type d’année
             <select name="typeAnnee">
-              <option value="complete">Année complète : 47 semaines d’accueil + 5 de congés payés</option>
+              <option value="complete">Année complète : 52 semaines (47 semaines d’accueil + 5 de congés payés)</option>
               <option value="incomplete">Année incomplète : 46 semaines d’accueil ou moins</option>
             </select>
             <small data-when="complete">Salaire lissé sur 52 semaines, congés payés inclus.</small>
@@ -255,6 +256,13 @@
           <button type="button" class="btn danger ghost" id="btn-reset">Tout effacer</button>
         </div>
         <p class="muted" id="storage-info"></p>
+      </div>
+
+      <div class="card card-don">
+        <h2>Soutenir l’app</h2>
+        <p class="muted">Pay Assmat est gratuite, sans publicité ni cookie, et vos données restent sur votre appareil. Si elle vous fait gagner du temps chaque mois, un petit don aide à la maintenir à jour des barèmes et de la convention collective.</p>
+        <a class="btn primary" href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="parametres"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 6.9 4.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg><span>Offrir un café</span></a>
+        <p class="muted small">Paiement sécurisé sur Buy Me a Coffee : l’app ne reçoit aucune information.</p>
       </div>
     </form>
   </section>

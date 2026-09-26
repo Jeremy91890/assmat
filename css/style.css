@@ -177,6 +177,16 @@ p:last-child { margin-bottom: 0; }
 }
 .brand-mark svg { width: 24px; height: 24px; color: var(--primary); }
 
+/* ---------- Dons ---------- */
+
+a.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+a.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.ghost.btn-don { color: var(--error); }
+@media (max-width: 420px) { .btn-don span { display: none; } .btn.btn-don { padding: 9px 12px; } }
+.card-don .btn { margin: var(--stack-sm) 0; }
+.card-don .btn svg { color: var(--error); }
+.small { font-size: 13px; line-height: 18px; }
+
 /* ---------- Onglets ----------
    Ordinateur : rail segmenté sous l'en-tête. Mobile : barre fixe en bas de l'écran,
    à portée de pouce, icône au-dessus du libellé. */

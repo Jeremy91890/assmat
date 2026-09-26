@@ -30,6 +30,11 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
   }
 
+  /* ---------- Dons ---------- */
+
+  // Lien externe simple : seul le clic est compté (sans donnée personnelle).
+  $$('[data-don]').forEach(a => a.addEventListener('click', () => Analytics.event(`don-${a.dataset.don}`)));
+
   /* ---------- Onglets ---------- */
 
   function showView(name) {
