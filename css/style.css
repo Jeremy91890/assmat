@@ -177,24 +177,59 @@ p:last-child { margin-bottom: 0; }
 }
 .brand-mark svg { width: 24px; height: 24px; color: var(--primary); }
 
-/* ---------- Onglets ---------- */
+/* ---------- Onglets ----------
+   Ordinateur : rail segmenté sous l'en-tête. Mobile : barre fixe en bas de l'écran,
+   à portée de pouce, icône au-dessus du libellé. */
 
 .tabs {
-  display: flex; gap: 6px;
-  max-width: 1140px; margin: 0 auto; padding: 0 var(--margin) var(--stack-sm);
+  display: flex; gap: 4px;
+  max-width: 1140px; margin: 0 auto var(--stack-sm);
+  padding: 4px; border-radius: var(--r-full);
+  background: var(--surf);
+  width: fit-content;
 }
 .tab {
-  flex: 1; appearance: none; border: 0; cursor: pointer;
-  padding: 12px 8px; border-radius: var(--r-full);
+  appearance: none; border: 0; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--r-full);
   background: transparent; color: var(--on-surface-variant);
   font-family: 'Nunito Sans', sans-serif;
   font-size: 14px; line-height: 20px; font-weight: 700; letter-spacing: .03em;
   white-space: nowrap;
-  transition: background-color .18s ease, color .18s ease;
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
 }
-@media (max-width: 420px) { .tab { font-size: 13px; letter-spacing: 0; padding: 12px 4px; } }
-.tab:hover { background: var(--surf-low); }
-.tab.is-active { background: var(--primary-container); color: var(--on-surface); }
+.tab-pill { display: grid; place-items: center; }
+.tab-ic { width: 20px; height: 20px; }
+.tab:hover { color: var(--on-surface); }
+.tab.is-active { background: var(--surf-lowest); color: var(--on-surface); box-shadow: 0 2px 10px rgba(51, 65, 85, .12); }
+
+@media (max-width: 699px) {
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    width: auto; max-width: none; margin: 0; gap: 0;
+    padding: 8px 8px calc(8px + var(--safe-b));
+    border-radius: 0;
+    background: color-mix(in srgb, var(--surf-lowest) 94%, transparent);
+    backdrop-filter: saturate(160%) blur(14px);
+    border-top: 1px solid var(--surf-high);
+    box-shadow: 0 -8px 24px rgba(51, 65, 85, .06);
+  }
+  .tab {
+    flex: 1; flex-direction: column; gap: 4px;
+    padding: 4px 0; border-radius: 0;
+    font-size: 12px; line-height: 16px; letter-spacing: .02em;
+  }
+  .tab.is-active { background: transparent; box-shadow: none; }
+  .tab-pill {
+    width: 60px; height: 32px; border-radius: var(--r-full);
+    transition: background-color .18s ease;
+  }
+  .tab.is-active .tab-pill { background: var(--primary-container); color: var(--primary); }
+  .tab-ic { width: 22px; height: 22px; }
+  /* La barre du bas ne doit masquer ni la fin des pages ni les notifications. */
+  body { padding-bottom: calc(96px + var(--safe-b)); }
+  .toast { bottom: calc(88px + var(--safe-b)); }
+}
 
 main { max-width: 1140px; margin: 0 auto; padding: 0 var(--margin) var(--stack-lg); }
 .view { display: none; }

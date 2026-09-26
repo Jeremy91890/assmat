@@ -32,9 +32,18 @@
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Sections">
-  <button class="tab is-active" role="tab" aria-selected="true"  aria-controls="vue-calendrier" data-view="calendrier">Calendrier</button>
-  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-paie"       data-view="paie">Fiche de paie</button>
-  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-params"     data-view="params">Paramètres</button>
+  <button class="tab is-active" role="tab" aria-selected="true"  aria-controls="vue-calendrier" data-view="calendrier">
+    <span class="tab-pill"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+    <span class="tab-lbl">Calendrier</span>
+  </button>
+  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-paie"       data-view="paie">
+    <span class="tab-pill"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14.5 3v4.5H19M9.5 12h6M9.5 16h6"/></svg></span>
+    <span class="tab-lbl">Fiche de paie</span>
+  </button>
+  <button class="tab"           role="tab" aria-selected="false" aria-controls="vue-params"     data-view="params">
+    <span class="tab-pill"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span>
+    <span class="tab-lbl">Paramètres</span>
+  </button>
 </nav>
 
 <main>
