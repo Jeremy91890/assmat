@@ -34,8 +34,7 @@
 
   $('#foot-annee').textContent = new Date().getFullYear();
 
-  // Lien externe simple : seul le clic est compté (sans donnée personnelle).
-  $$('[data-don]').forEach(a => a.addEventListener('click', () => Analytics.event(`don-${a.dataset.don}`)));
+  // Suivi des clics « Soutenir » : voir entete.js.
 
   /* ---------- Contrats (un par enfant) ---------- */
 
@@ -823,32 +822,7 @@
     });
   }
 
-  // iOS n'implémente pas `beforeinstallprompt` : Safari comme Chrome passent par le
-  // menu Partager. On affiche donc le bouton d'emblée avec la marche à suivre.
-  const estIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS se déclare macOS
-  const dejaInstalle = () =>
-    window.navigator.standalone === true
-    || window.matchMedia('(display-mode: standalone)').matches;
-
-  let promptInstall = null;
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    promptInstall = e;
-    $('#btn-install').hidden = false;
-  });
-
-  if (estIOS && !dejaInstalle()) $('#btn-install').hidden = false;
-
-  $('#btn-install').addEventListener('click', async () => {
-    if (!promptInstall) { $('#dlg-install').showModal(); return; }
-    promptInstall.prompt();
-    await promptInstall.userChoice;
-    promptInstall = null;
-    $('#btn-install').hidden = true;
-  });
-
-  window.addEventListener('appinstalled', () => { $('#btn-install').hidden = true; Analytics.event('installation'); });
+  // Bouton « Installer » : voir entete.js (partagé avec le guide).
 
   /* ================= Démarrage ================= */
 

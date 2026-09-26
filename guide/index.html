@@ -23,6 +23,7 @@
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <link rel="preload" href="../fonts/quicksand-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../fonts/nunito-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="manifest" href="../manifest.webmanifest">
 <link rel="stylesheet" href="../css/style.css">
 <script type="application/ld+json">
 {
@@ -105,6 +106,8 @@
         <em>Guide du salaire</em>
       </span>
     </a>
+    <a class="btn ghost sm btn-don" href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="guide-entete" aria-label="Faire un don pour soutenir l’app"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 6.9 4.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5.5 3.5 4.2 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg><span>Soutenir</span></a>
+    <button id="btn-install" class="btn ghost sm btn-install" hidden aria-label="Installer l’application"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span class="lbl-long">Installer l’application</span><span class="lbl-court">Installer</span></button>
   </div>
 </header>
 
@@ -211,12 +214,40 @@
   <p class="foot-links">
     <a href="../">Simulateur</a>
     <span aria-hidden="true">·</span>
-    <a href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener">Soutenir l’app</a>
+    <a href="https://buymeacoffee.com/jeremy.d" target="_blank" rel="noopener" data-don="guide-footer">Soutenir l’app</a>
     <span aria-hidden="true">·</span>
     <span>© 2026 Jérémy Debelleix</span>
   </p>
 </footer>
 
+<!-- ============ INSTALLATION (iOS) ============ -->
+<dialog id="dlg-install">
+  <form method="dialog">
+    <header class="dlg-head">
+      <div>
+        <h2>Installer Pay Assmat</h2>
+        <p class="muted">Ajoutez l'application à votre écran d'accueil.</p>
+      </div>
+      <button class="btn icon ghost" value="cancel" aria-label="Fermer">✕</button>
+    </header>
+
+    <div class="dlg-body">
+      <ol class="install-steps">
+        <li>Touchez le bouton <strong>Partager</strong> <svg class="ico-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M8.5 6.5 12 3l3.5 3.5"/><path d="M6 11H4.5v9.5h15V11H18"/></svg> dans la barre du navigateur.</li>
+        <li>Faites défiler puis choisissez <strong>« Sur l'écran d'accueil »</strong>.</li>
+        <li>Confirmez avec <strong>Ajouter</strong>.</li>
+      </ol>
+      <p class="muted install-note" id="install-note">Sur iPhone, l'installation passe toujours par le menu Partager : aucun navigateur ne propose de bouton automatique.</p>
+    </div>
+
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button class="btn primary" value="ok" type="submit">J'ai compris</button>
+    </footer>
+  </form>
+</dialog>
+
 <script src="../js/analytics.js"></script>
+<script src="../js/entete.js"></script>
 </body>
 </html>

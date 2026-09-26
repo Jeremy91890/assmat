@@ -2,7 +2,7 @@
    Les données saisies ne sont jamais envoyées sur le réseau — le cache ne sert qu'aux
    fichiers de l'app. La mesure d'audience (GoatCounter, autre origine) n'est pas interceptée. */
 
-const VERSION = 'pay-assmat-v23';
+const VERSION = 'pay-assmat-v24';
 const SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const SHELL = [
   './js/calc.js',
   './js/store.js',
   './js/app.js',
+  './js/entete.js',
   './manifest.webmanifest',
   './fonts/quicksand-latin.woff2',
   './fonts/nunito-sans-latin.woff2',
