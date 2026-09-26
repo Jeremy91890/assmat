@@ -14,8 +14,14 @@ console.log('\nMensualisation');
 test('année complète : 3,64 € × 45 h × 52 ÷ 12 = 709,80 €', () => {
   assert.strictEqual(Calc.salaireMensualise(S()).brut, 709.80);
 });
-test('année incomplète (47 semaines) = 641,55 €', () => {
-  assert.strictEqual(Calc.salaireMensualise(S({ semainesAn: 47 })).brut, 641.55);
+test('année incomplète (40 semaines) : 3,64 € × 45 h × 40 ÷ 12 = 546,00 €', () => {
+  assert.strictEqual(Calc.salaireMensualise(S({ typeAnnee: 'incomplete', semainesAn: 40 })).brut, 546.00);
+});
+test('année complète : le nombre de semaines saisi est ignoré (52 payées)', () => {
+  assert.strictEqual(Calc.salaireMensualise(S({ semainesAn: 40 })).brut, 709.80);
+});
+test('jours mensualisés : 4 j × 40 sem. ÷ 12 = 13,33 → 14', () => {
+  assert.strictEqual(Calc.joursMensualises(S({ typeAnnee: 'incomplete', semainesAn: 40, joursSemaine: 4 })), 14);
 });
 
 console.log('\nTaux horaire brut / net');
@@ -93,7 +99,7 @@ test('lundi suivant change de semaine', () => {
 
 console.log('\nMois complet — mensualisation, 4 j/sem. × 9 h');
 {
-  const s = S({ heuresSemaine: 36, joursSemaine: 4, semainesAn: 47, tauxSaisi: 4.20 });
+  const s = S({ heuresSemaine: 36, joursSemaine: 4, typeAnnee: 'incomplete', semainesAn: 46, tauxSaisi: 4.20, cpMode: 'juin' });
   const days = {};
   // Tous les lundis-jeudis de septembre 2026, 9 h + un déjeuner.
   for (const d of Calc.daysOfMonth('2026-09')) {
@@ -130,7 +136,7 @@ console.log('\nMois complet — mensualisation, 4 j/sem. × 9 h');
     assert.strictEqual(r.pajemploi.indemnitesEntretien, r.entretien);
   });
   test('Pajemploi : jours d’activité = jours mensualisés arrondis au supérieur', () => {
-    assert.strictEqual(r.pajemploi.joursActivite, 16); // 4 × 47 / 12 = 15,67
+    assert.strictEqual(r.pajemploi.joursActivite, 16); // 4 × 46 / 12 = 15,33
   });
 }
 
@@ -261,10 +267,100 @@ console.log('\nMois vide');
 
 console.log('\nCongés payés');
 {
-  const r = Calc.month('2026-12', {}, S({ cpActif: true }));
-  test('ligne CP = 10 % du brut, ajoutée au total', () => {
-    assert.strictEqual(r.lignes.at(-1).brut, 70.98);
-    assert.strictEqual(r.brut, 780.78);
+  // Année incomplète, 40 sem. × 45 h à 3,64 € brut : 546,00 € brut par mois.
+  const inc = over => S({ typeAnnee: 'incomplete', semainesAn: 40, debutContrat: '2025-06-01', ...over });
+
+  test('année complète : aucun congé payé en sus, même en juin', () => {
+    const r = Calc.month('2026-06', {}, S({ debutContrat: '2025-06-01' }));
+    assert.strictEqual(r.lignes.length, 1);
+    assert.strictEqual(r.brut, 709.80);
+  });
+
+  const cp = Calc.congesPayes(2026, {}, inc());
+  test('période complète : 12 mois → 30 jours ouvrables acquis', () => {
+    assert.strictEqual(cp.mois, 12);
+    assert.strictEqual(cp.jours, 30);
+  });
+  test('dixième = 10 % de 12 × 546,00 € = 655,20 €', () => {
+    assert.strictEqual(cp.dixieme, 655.20);
+  });
+  test('maintien = 5 sem. × 45 h × 3,64 € = 819,00 €, retenu car plus avantageux', () => {
+    assert.strictEqual(cp.maintien, 819.00);
+    assert.strictEqual(cp.du, 819.00);
+    assert.strictEqual(cp.regle, 'maintien de salaire');
+  });
+
+  test('paiement en juin : ligne CP en juin, rien les autres mois', () => {
+    const juin = Calc.month('2026-06', {}, inc({ cpMode: 'juin' }));
+    assert.strictEqual(juin.lignes.at(-1).brut, 819.00);
+    assert.strictEqual(juin.brut, Calc.r2(546 + 819));
+    assert.strictEqual(Calc.month('2026-07', {}, inc({ cpMode: 'juin' })).brut, 546);
+  });
+  test('paiement à la prise principale (août) : payé en août', () => {
+    const s = inc({ cpMode: 'prise', cpMoisPrise: 8 });
+    assert.strictEqual(Calc.month('2026-06', {}, s).brut, 546);
+    assert.strictEqual(Calc.month('2026-08', {}, s).brut, Calc.r2(546 + 819));
+  });
+  test('au fur et à mesure : 10 % chaque mois, complément au maintien en juin', () => {
+    const s = inc({ cpMode: 'mensuel' });
+    assert.strictEqual(Calc.month('2026-03', {}, s).brut, Calc.r2(546 + 54.60));
+    const juin = Calc.month('2026-06', {}, s);
+    assert.strictEqual(juin.lignes.find(l => l.cle === 'cp-compl').brut, Calc.r2(819 - 655.20));
+  });
+  test('contrat démarré en janvier : 5 mois → 13 jours acquis', () => {
+    const c = Calc.congesPayes(2026, {}, inc({ debutContrat: '2026-01-10' }));
+    assert.strictEqual(c.mois, 5);
+    assert.strictEqual(c.jours, 13);  // 12,5 arrondi au supérieur
+  });
+  test('paiement au réel : congés payés dus en sus', () => {
+    assert.ok(Calc.cpEnSus(S({ mode: 'reel' })));
+  });
+}
+
+console.log('\nRégularisation annuelle (année incomplète)');
+{
+  // Contrat du 1er septembre 2025, 4 j (lun.–jeu.) × 9 h = 36 h/sem., 40 semaines programmées :
+  // 120 h payées par mois, soit 1 440 h sur l'année.
+  const s = S({ typeAnnee: 'incomplete', semainesAn: 40, heuresSemaine: 36, joursSemaine: 4,
+    tauxSaisi: 4, debutContrat: '2025-09-01', cpMode: 'juin' });
+  const remplir = semaines => {
+    const days = {};
+    let n = 0;
+    for (const mk of ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03',
+      '2026-04', '2026-05', '2026-06', '2026-07', '2026-08']) {
+      for (const d of Calc.daysOfMonth(mk)) {
+        const dow = (Calc.parseISO(d).getDay() + 6) % 7;
+        if (dow === 0) n++;               // une nouvelle semaine commence le lundi
+        if (dow <= 3 && n <= semaines) days[d] = { statut: 'present', heures: 9 };
+      }
+    }
+    return days;
+  };
+
+  test('pas de régularisation hors mois anniversaire ni en année complète', () => {
+    assert.strictEqual(Calc.regularisation('2026-08', {}, s), null);
+    assert.strictEqual(Calc.regularisation('2026-09', {}, { ...s, typeAnnee: 'complete' }), null);
+    assert.strictEqual(Calc.regularisation('2025-09', {}, s), null);   // premier mois du contrat
+  });
+
+  const plus = Calc.regularisation('2026-09', remplir(45), s);
+  test('45 semaines effectuées au lieu de 40 : 5 × 36 h = 180 h à régulariser', () => {
+    assert.strictEqual(plus.heuresPayees, 1440);
+    assert.strictEqual(plus.heuresDues, 1620);
+    assert.strictEqual(plus.ecart, 180);
+    assert.strictEqual(plus.montant, 720);
+  });
+  test('la régularisation apparaît sur la fiche du mois anniversaire', () => {
+    const r = Calc.month('2026-09', remplir(45), s);
+    const l = r.lignes.find(x => x.cle === 'regul');
+    assert.strictEqual(l.brut, 720);
+    assert.strictEqual(r.pajemploi.heures, Calc.r2(120 + 180));
+  });
+  test('moins de semaines que prévu : trop-payé non retenu', () => {
+    const moins = Calc.regularisation('2026-09', remplir(38), s);
+    assert.ok(moins.ecart < 0);
+    assert.strictEqual(moins.montant, 0);
+    assert.ok(!Calc.month('2026-09', remplir(38), s).lignes.some(x => x.cle === 'regul'));
   });
 }
 

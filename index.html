@@ -144,15 +144,23 @@
               <option value="reel">Paiement au réel (heures réellement effectuées)</option>
             </select>
           </label>
+          <label class="span2" data-when="mensualisation">Type d’année
+            <select name="typeAnnee">
+              <option value="complete">Année complète : 47 semaines d’accueil + 5 de congés payés</option>
+              <option value="incomplete">Année incomplète : 46 semaines d’accueil ou moins</option>
+            </select>
+            <small data-when="complete">Salaire lissé sur 52 semaines, congés payés inclus.</small>
+            <small data-when="incomplete">Salaire lissé sur les semaines programmées ; congés payés versés en plus, régularisation à chaque date anniversaire.</small>
+          </label>
           <label>Heures / semaine<input type="number" name="heuresSemaine" step="0.25" min="0" inputmode="decimal"></label>
           <label>Jours / semaine<input type="number" name="joursSemaine" step="1" min="0" max="7" inputmode="numeric"></label>
-          <label>Semaines / an
-            <input type="number" name="semainesAn" step="1" min="1" max="52" inputmode="numeric">
-            <small>52 = année complète.</small>
+          <label data-when="incomplete">Semaines d’accueil / an
+            <input type="number" name="semainesAn" step="1" min="1" max="46" inputmode="numeric">
+            <small>Semaines programmées, hors congés payés (46 au plus).</small>
           </label>
           <label>Début du contrat
             <input type="date" name="debutContrat">
-            <small>Borne l’année contractuelle (quota enfant malade).</small>
+            <small>Borne l’année contractuelle : quota enfant malade, régularisation annuelle, congés acquis.</small>
           </label>
           <label class="readout">Salaire mensualisé
             <output id="mens-readout">—</output>
@@ -193,10 +201,30 @@
           <input type="checkbox" name="kmActif"><span>Frais kilométriques</span>
         </label>
         <label data-when="km">Tarif (€/km)<input type="number" name="kmTarif" step="0.01" min="0" inputmode="decimal"></label>
-        <label class="switch">
-          <input type="checkbox" name="cpActif"><span>Ligne « indemnité de congés payés » sur la fiche</span>
-        </label>
-        <label data-when="cp">Taux (%)<input type="number" name="cpTaux" step="0.5" min="0" inputmode="decimal"></label>
+      </div>
+
+      <div class="card">
+        <h2>Congés payés</h2>
+        <p class="muted" data-when="cp-inclus">Année complète : les 5 semaines de congés payés sont incluses dans la mensualisation. Le salaire est maintenu pendant les congés, rien n’est ajouté.</p>
+        <div class="grid2" data-when="cp">
+          <label class="span2">Paiement prévu au contrat
+            <select name="cpMode">
+              <option value="juin">En une fois, en juin</option>
+              <option value="prise">Lors de la prise principale des congés</option>
+              <option value="mensuel">Au fur et à mesure (10 % chaque mois)</option>
+            </select>
+          </label>
+          <label data-when="cp-prise">Mois de la prise principale
+            <select name="cpMoisPrise">
+              <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+              <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+              <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+              <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+            </select>
+          </label>
+          <label>Règle du dixième (%)<input type="number" name="cpTaux" step="0.5" min="0" inputmode="decimal"></label>
+          <p class="muted span2">2,5 jours ouvrables acquis par mois du 1<sup>er</sup> juin au 31 mai (30 au plus). L’indemnité retenue est la plus avantageuse entre le dixième des salaires de la période et le maintien de salaire.</p>
+        </div>
       </div>
 
       <div class="card">

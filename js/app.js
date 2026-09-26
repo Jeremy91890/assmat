@@ -203,7 +203,7 @@
     set.has(n) ? set.delete(n) : set.add(n);
     settings.joursAccueil = [...set].sort();
     Store.saveSettings(settings);
-    renderQuickFill();
+    renderResultats();   // les jours d'accueil entrent dans le calcul des retenues d'absence
   });
 
   /** Applique la journée type aux jours d'accueil, sans écraser l'existant. */
@@ -408,7 +408,12 @@
       const w = el.dataset.when;
       const on = (w === 'bareme' || w === 'fixe') ? settings.entretienMode === w
                : w === 'km' ? settings.kmActif
-               : w === 'cp' ? settings.cpActif
+               : w === 'mensualisation' ? settings.mode === 'mensualisation'
+               : w === 'complete' ? Calc.anneeComplete(settings)
+               : w === 'incomplete' ? settings.mode === 'mensualisation' && !Calc.anneeComplete(settings)
+               : w === 'cp-inclus' ? !Calc.cpEnSus(settings)
+               : w === 'cp' ? Calc.cpEnSus(settings)
+               : w === 'cp-prise' ? settings.cpMode === 'prise'
                : true;
       el.hidden = !on;
     });
@@ -450,6 +455,7 @@
     Store.saveSettings(settings);
     syncConditionnels();
     renderReadouts();
+    renderResultats();
 
     // Activer/désactiver un repas change la liste proposée dans la journée type.
     // On ne re-rend que ce bloc, pour ne pas retirer le focus de la case cochée.
@@ -493,6 +499,12 @@
     toast('Données effacées.');
   });
 
+  /** Recalcule tout ce qui dépend des paramètres : compteurs du calendrier et fiche de paie. */
+  function renderResultats() {
+    renderCalendrier();
+    renderPaie();
+  }
+
   /* ================= FICHE DE PAIE ================= */
 
   function renderPaie() {
@@ -500,7 +512,7 @@
     const r = Calc.month(moisPaie, days, settings);
     const s = settings;
 
-    if (r.joursSaisis === 0 && s.mode === 'reel') {
+    if (r.joursSaisis === 0 && s.mode === 'reel' && !r.brut) {
       $('#paie-content').innerHTML =
         `<div class="card empty"><p>Aucune journée saisie pour ${Calc.fmtMois(moisPaie)}.</p>
          <p class="muted">Renseignez le calendrier pour générer la fiche.</p></div>`;
@@ -545,6 +557,28 @@
       avertissements.push(`Les heures réellement effectuées (${Calc.fmtH(r.totalHeures)}) sont inférieures aux ` +
         `${Calc.fmtH(Calc.heuresMensualisees(s))} mensualisées : le salaire de base reste dû en intégralité.`);
     }
+    const cp = r.congesPayes;
+    if (cp && cp.mois) {
+      avertissements.push(`Congés payés ${cp.periode} : ${cp.jours} jours ouvrables acquis sur ${cp.mois} mois. ` +
+        `Dixième : ${Calc.fmtEur(cp.dixieme)} (${Calc.fmtEur(cp.brutReference)} × ${Calc.fmtNum(s.cpTaux)} %), ` +
+        `maintien de salaire : ${Calc.fmtEur(cp.maintien)}. Le plus avantageux est retenu : ${cp.regle}.`);
+    }
+    const rg = r.regularisation;
+    if (rg) {
+      avertissements.push(`Régularisation annuelle (${Calc.fmtMois(rg.du)} – ${Calc.fmtMois(rg.au)}) : ` +
+        `${Calc.fmtH(rg.heuresDues)} dues (accueil dans la limite du contrat + absences rémunérées) pour ` +
+        `${Calc.fmtH(rg.heuresPayees)} payées par la mensualisation. ` +
+        (rg.ecart > 0 ? `${Calc.fmtH(rg.ecart)} à verser, soit ${Calc.fmtEur(rg.montant)} brut.`
+                      : 'Aucun complément dû ; un trop-payé n’est pas retenu sur le salaire.'));
+    }
+    if (s.mode === 'mensualisation' && !Calc.anneeComplete(s) && Number(s.semainesAn) > 46) {
+      avertissements.push(`${s.semainesAn} semaines d’accueil : au-delà de 46, le contrat relève de l’année ` +
+        'complète (47 semaines + 5 de congés payés). Vérifiez le type d’année dans les paramètres.');
+    }
+    if (s.mode === 'mensualisation' && !Calc.anneeComplete(s) && !s.debutContrat) {
+      avertissements.push('Année incomplète : renseignez la date de début du contrat pour calculer la ' +
+        'régularisation annuelle et les congés acquis.');
+    }
     if (r.joursSaisis === 0) {
       avertissements.push('Aucune journée saisie ce mois-ci : seule la mensualisation figure sur la fiche.');
     }
@@ -563,7 +597,8 @@
           <div class="partie"><h3>Salarié</h3><p>${esc(s.assmat) || '—'}</p></div>
           <div class="partie"><h3>Enfant accueilli</h3><p>${esc(s.enfant) || '—'}</p></div>
           <div class="partie"><h3>Contrat</h3><p>${s.mode === 'mensualisation'
-            ? `Mensualisation · ${Calc.fmtH(s.heuresSemaine)}/sem. · ${s.semainesAn} sem./an`
+            ? `Mensualisation · ${Calc.fmtH(s.heuresSemaine)}/sem. · ${Calc.anneeComplete(s)
+                ? 'année complète' : `année incomplète (${s.semainesAn} sem.)`}`
             : 'Paiement au réel'}</p></div>
         </div>
 
@@ -662,8 +697,25 @@
   /* ================= PWA ================= */
 
   if ('serviceWorker' in navigator) {
+    // Une app installée reste en mémoire : on cherche une mise à jour à chaque retour
+    // au premier plan, et `updateViaCache: 'none'` évite de relire un sw.js périmé.
     window.addEventListener('load', () =>
-      navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW non enregistré', e)));
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(reg => document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        }))
+        .catch(e => console.warn('SW non enregistré', e)));
+
+    // Nouvelle version active : on recharge pour exécuter le nouveau code, mais pas
+    // au tout premier enregistrement ni au milieu de la saisie d'une journée.
+    const avaitUnSW = !!navigator.serviceWorker.controller;
+    let recharge = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!avaitUnSW || recharge) return;
+      recharge = true;
+      if (dlg.open) dlg.addEventListener('close', () => location.reload(), { once: true });
+      else location.reload();
+    });
   }
 
   // iOS n'implémente pas `beforeinstallprompt` : Safari comme Chrome passent par le

@@ -27,6 +27,11 @@ Pour un usage réel, déposer le dossier sur n'importe quel hébergement statiqu
 (GitHub Pages, Netlify, Cloudflare Pages…) — le service worker exige un contexte sécurisé,
 `localhost` excepté.
 
+**Mises à jour** — le service worker sert toujours la version en ligne (cache en secours hors
+ligne) : un nouveau déploiement est pris en compte au prochain lancement, sans réinstaller.
+Pour qu'une app déjà ouverte se recharge d'elle-même, incrémenter `VERSION` dans `sw.js` :
+l'app vérifie la présence d'une mise à jour à chaque retour au premier plan.
+
 ## Fonctionnement
 
 **Calendrier** — une case par jour. On y saisit les heures de présence (par pas de 15 min),
@@ -36,8 +41,9 @@ passe en orange au-delà du seuil de majoration. Le remplissage rapide applique 
 type aux jours d'accueil du contrat sans écraser ce qui existe déjà.
 
 **Paramètres** — taux horaire (saisi en brut ou en net, l'autre étant déduit du taux de
-cotisations), mode de paiement, volume contractuel, seuils et taux de majoration, barème
-d'entretien, prix des repas, frais kilométriques, congés payés.
+cotisations), mode de paiement, type d'année (complète / incomplète), date de début du contrat,
+volume contractuel, seuils et taux de majoration, barème
+d'entretien, prix des repas, frais kilométriques, modalités de paiement des congés payés.
 
 **Fiche de paie** — bulletin imprimable (Ctrl/⌘+P produit un PDF propre), récapitulatif des
 champs à reporter dans Pajemploi, export CSV, et détail semaine par semaine.
@@ -48,7 +54,9 @@ Barèmes 2026, tous modifiables dans les paramètres.
 
 | Élément | Règle |
 |---|---|
-| Salaire mensualisé | `taux horaire × heures/semaine × semaines/an ÷ 12` |
+| Salaire mensualisé | année complète : `taux × heures/semaine × 52 ÷ 12` ; année incomplète (≤ 46 semaines d'accueil) : `taux × heures/semaine × semaines programmées ÷ 12` |
+| Congés payés | année complète : inclus dans la mensualisation. Sinon : 2,5 jours ouvrables par mois du 1er juin au 31 mai (30 max), indemnité = max(10 % des salaires de la période, maintien de salaire), versée en juin, à la prise principale ou au fur et à mesure (10 % par mois + complément en juin) |
+| Régularisation annuelle | année incomplète, au mois anniversaire du contrat : heures dues sur 12 mois (accueil dans la limite du contrat + absences rémunérées) − heures payées ; un solde positif est versé, un trop-payé n'est pas retenu |
 | Paiement au réel | heures effectivement saisies × taux horaire |
 | Heures complémentaires | au-delà du contrat hebdomadaire, jusqu'au seuil de majoration, au taux normal |
 | Heures majorées | +25 % sur les 8 premières heures au-delà de 45 h/semaine, +50 % ensuite |

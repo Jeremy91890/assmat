@@ -34,6 +34,14 @@ const Store = (() => {
       return found ? { ...def, ...found } : { ...def };
     });
     s.typeRepas = { ...Calc.DEFAULTS.typeRepas, ...(saved.typeRepas || {}) };
+    // Anciennes versions : le type d'année se déduisait du nombre de semaines, et les
+    // congés payés étaient une simple case « 10 % chaque mois ».
+    if (saved.typeAnnee === undefined && saved.semainesAn !== undefined) {
+      s.typeAnnee = saved.semainesAn < 52 ? 'incomplete' : 'complete';
+      if (s.typeAnnee === 'complete') s.semainesAn = Calc.DEFAULTS.semainesAn;
+    }
+    if (saved.cpMode === undefined && saved.cpActif) s.cpMode = 'mensuel';
+    delete s.cpActif;
     return s;
   }
 
@@ -74,7 +82,9 @@ const Store = (() => {
     if (!data || typeof data !== 'object' || (!data.days && !data.settings)) {
       return { ok: false, message: 'Ce fichier ne ressemble pas à une sauvegarde Pay Assmat.' };
     }
-    if (data.settings) saveSettings({ ...Calc.DEFAULTS, ...data.settings });
+    // Enregistrés tels quels : loadSettings complète avec les valeurs par défaut et migre
+    // les sauvegardes d'anciennes versions.
+    if (data.settings) saveSettings(data.settings);
     if (data.days) saveDays(data.days);
     return { ok: true, message: 'Sauvegarde restaurée.' };
   }

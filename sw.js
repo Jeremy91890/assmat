@@ -2,7 +2,7 @@
    Les données saisies ne sont jamais envoyées sur le réseau — le cache ne sert qu'aux
    fichiers de l'app. La mesure d'audience (GoatCounter, autre origine) n'est pas interceptée. */
 
-const VERSION = 'pay-assmat-v10';
+const VERSION = 'pay-assmat-v13';
 const SHELL = [
   './',
   './index.html',
@@ -36,32 +36,28 @@ self.addEventListener('activate', e => {
   );
 });
 
+/**
+ * Réseau d'abord, cache en secours : une nouvelle version déployée est servie dès
+ * qu'elle est en ligne, sans dépendre d'un changement de VERSION. `cache: 'no-cache'`
+ * revalide auprès du serveur (ETag) au lieu de reprendre une copie du cache HTTP.
+ * Au-delà de 4 s sans réponse (réseau très lent), on sert la copie locale.
+ */
+function reseauDabord(req, cle = req) {
+  const reseau = fetch(req, { cache: 'no-cache' }).then(res => {
+    if (res.ok && res.type === 'basic') {
+      const copy = res.clone();
+      caches.open(VERSION).then(c => c.put(cle, copy));
+    }
+    return res;
+  });
+  const secours = () => caches.match(cle).then(hit => hit || reseau);
+  const delai = new Promise(r => setTimeout(r, 4000)).then(secours);
+  return Promise.race([reseau.catch(secours), delai]);
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-
-  // Navigations : réseau d'abord (pour récupérer une mise à jour), repli sur le cache.
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then(res => {
-          const copy = res.clone();
-          caches.open(VERSION).then(c => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
-  // Ressources : cache d'abord, puis réseau (et mise en cache au passage).
-  e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res => {
-      if (res.ok && res.type === 'basic') {
-        const copy = res.clone();
-        caches.open(VERSION).then(c => c.put(req, copy));
-      }
-      return res;
-    }))
-  );
+  // Les navigations retombent toutes sur index.html (application monopage).
+  e.respondWith(reseauDabord(req, req.mode === 'navigate' ? './index.html' : req));
 });

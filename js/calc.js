@@ -22,7 +22,8 @@ const Calc = (() => {
     heuresSemaine: 45,        // heures d'accueil prévues au contrat
     joursSemaine: 4,          // jours d'accueil prévus au contrat
     joursAccueil: [1, 2, 3, 4], // jours de la semaine gardés (1 = lundi … 7 = dimanche)
-    semainesAn: 52,           // 52 = année complète, sinon année incomplète
+    typeAnnee: 'complete',    // 'complete' (52 sem. payées, CP inclus) | 'incomplete'
+    semainesAn: 46,           // année incomplète : semaines d'accueil programmées (46 max)
     debutContrat: '',         // 'YYYY-MM-DD' : borne l'année contractuelle (quota enfant malade)
     seuilMajoration: 45,      // au-delà : heures majorées
     majoration1: 25,          // % sur les 8 premières heures au-delà du seuil
@@ -48,8 +49,10 @@ const Calc = (() => {
     kmTarif: 0.45,            // €/km
 
     // Congés payés
-    cpActif: false,           // ligne « indemnité de CP 10 % » sur la fiche
-    cpTaux: 10,               // %
+    // Congés payés : dus en plus du salaire hors année complète mensualisée
+    cpMode: 'juin',           // 'juin' | 'prise' (prise principale) | 'mensuel' (au fur et à mesure)
+    cpMoisPrise: 8,           // mois de la prise principale (1 = janvier … 12 = décembre)
+    cpTaux: 10,               // % : règle du dixième
 
     // Journée type (pré-remplissage rapide)
     typeHeures: 9,
@@ -153,14 +156,23 @@ const Calc = (() => {
     return { brut: r2(t.brut * heures), net: r2(t.net * heures), heures: r4(heures) };
   }
 
+  /** Année complète : 47 semaines d'accueil + 5 de CP, soit 52 semaines payées. */
+  const anneeComplete = s => s.typeAnnee !== 'incomplete';
+
+  /** Semaines rémunérées par la mensualisation : 52, ou les semaines programmées. */
+  const semainesPayees = s => anneeComplete(s) ? 52 : (Number(s.semainesAn) || 0);
+
+  /** Les congés payés s'ajoutent au salaire, sauf en année complète mensualisée. */
+  const cpEnSus = s => !(s.mode === 'mensualisation' && anneeComplete(s));
+
   /** Heures rémunérées chaque mois au titre de la mensualisation. */
   function heuresMensualisees(s) {
-    return (Number(s.heuresSemaine) || 0) * (Number(s.semainesAn) || 0) / 12;
+    return (Number(s.heuresSemaine) || 0) * semainesPayees(s) / 12;
   }
 
-  /** Jours d'activité mensualisés = jours/semaine × semaines/an ÷ 12, arrondi à l'entier supérieur. */
+  /** Jours d'activité mensualisés = jours/semaine × semaines payées ÷ 12, arrondi à l'entier supérieur. */
   function joursMensualises(s) {
-    return Math.ceil(r4((Number(s.joursSemaine) || 0) * (Number(s.semainesAn) || 0) / 12));
+    return Math.ceil(r4((Number(s.joursSemaine) || 0) * semainesPayees(s) / 12));
   }
 
   /* ---------- Absences déductibles ---------- */
@@ -258,18 +270,29 @@ const Calc = (() => {
       });
   }
 
-  /* ---------- Calcul mensuel complet ---------- */
+  /* ---------- Salaire de base d'un mois ---------- */
+
+  const dateContrat = s => /^\d{4}-\d{2}-\d{2}$/.test(s.debutContrat || '') ? s.debutContrat : null;
+
+  /** Mois 'YYYY-MM' de `de` à `a` inclus. */
+  function moisEntre(de, a) {
+    const out = [];
+    for (let m = de; m <= a; m = shiftMonth(m, 1)) out.push(m);
+    return out;
+  }
+
+  /** Le contrat court-il ce mois-ci ? À défaut de date de début : un jour au moins est saisi. */
+  function moisActif(mk, days, s) {
+    const debut = dateContrat(s);
+    return debut ? mk >= debut.slice(0, 7) : Object.keys(days).some(d => d.startsWith(mk));
+  }
 
   /**
-   * @param {string} mk       mois 'YYYY-MM'
-   * @param {object} days     dictionnaire { 'YYYY-MM-DD': jour }
-   * @param {object} s        paramètres (settings)
-   * @returns un objet de synthèse prêt à afficher.
+   * Heures, salaire brut et retenues d'un mois, hors congés payés et régularisation
+   * (qui, eux, se calculent à partir des salaires de base de plusieurs mois).
    */
-  function month(mk, days, s) {
+  function baseMois(mk, days, s) {
     const t = tauxHoraire(s);
-    const cot = (Number(s.tauxCotisations) || 0) / 100;
-    const repasActifs = (s.repas || []).filter(r => r.actif);
 
     const entries = [];
     for (const date of daysOfMonth(mk)) {
@@ -285,13 +308,7 @@ const Calc = (() => {
       });
     }
 
-    const saisis = entries.filter(e => e.heures > 0 || e.statut !== 'present');
     const presents = entries.filter(e => e.heures > 0);
-
-    const totalHeures = r4(presents.reduce((a, e) => a + e.heures, 0));
-    const joursPresence = presents.length;
-    const totalKm = r2(entries.reduce((a, e) => a + e.km, 0));
-
     const sem = weeks(presents, s);
     const hComp = r4(sem.reduce((a, w) => a + w.complementaires, 0));
     const hMaj1 = r4(sem.reduce((a, w) => a + w.maj1, 0));
@@ -353,14 +370,141 @@ const Calc = (() => {
       heuresBase = heuresBase * (1 - ratioAbsence);
     }
 
-    let brutTotal = r2(lignes.reduce((a, l) => a + l.brut, 0));
+    // Heures dues au titre du contrat, pour la régularisation annuelle : heures d'accueil
+    // dans la limite du contrat, plus les absences rémunérées (convenance du parent, férié…).
+    // Les congés payés sont exclus : ils sont rémunérés à part en année incomplète.
+    const absencesPayees = entries.filter(e =>
+      e.statut !== 'present' && e.statut !== 'conge' && !deduits.includes(e));
+    const heuresDues = r4(hNorm + absencesPayees.length * hJour);
 
-    if (s.cpActif) {
-      const cp = r2(brutTotal * (Number(s.cpTaux) || 0) / 100);
-      lignes.push({ cle: 'cp', libelle: `Indemnité de congés payés (${s.cpTaux} %)`, qte: null, taux: null, brut: cp });
-      brutTotal = r2(brutTotal + cp);
+    return {
+      t, entries, presents, sem, lignes, deduits,
+      hNorm, hComp, hMaj1, hMaj2, heuresBase, heuresDues,
+      brut: r2(lignes.reduce((a, l) => a + l.brut, 0))
+    };
+  }
+
+  /* ---------- Congés payés (hors année complète) ---------- */
+
+  const NOMS_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+    'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+  /**
+   * Congés acquis sur la période de référence du 1er juin `annee − 1` au 31 mai `annee` :
+   * 2,5 jours ouvrables par mois (30 au plus, arrondi à l'entier supérieur), indemnisés au
+   * plus avantageux de la règle du dixième et du maintien de salaire.
+   */
+  function congesPayes(annee, days, s) {
+    const mois = moisEntre(`${annee - 1}-06`, `${annee}-05`).filter(mk => moisActif(mk, days, s));
+    const brutReference = r2(mois.reduce((a, mk) => a + baseMois(mk, days, s).brut, 0));
+    const jours = Math.min(30, Math.ceil(r4(mois.length * 2.5)));
+    const dixieme = r2(brutReference * (Number(s.cpTaux) || 0) / 100);
+    // Maintien : ce qu'aurait perçu le salarié en travaillant, 6 jours ouvrables par semaine.
+    const maintien = r2(jours / 6 * (Number(s.heuresSemaine) || 0) * tauxHoraire(s).brut);
+    return {
+      periode: `juin ${annee - 1} – mai ${annee}`,
+      mois: mois.length, jours, brutReference, dixieme, maintien,
+      du: Math.max(dixieme, maintien),
+      regle: maintien > dixieme ? 'maintien de salaire' : `règle du ${s.cpTaux} %`
+    };
+  }
+
+  /** Lignes de congés payés à ajouter au brut du mois `mk`, selon le mode choisi au contrat. */
+  function lignesCP(mk, brutMois, days, s) {
+    if (!cpEnSus(s)) return { lignes: [], detail: null };
+    const [y, m] = mk.split('-').map(Number);
+    const taux = Number(s.cpTaux) || 0;
+    const lignes = [];
+    let detail = null;
+
+    if (s.cpMode === 'mensuel') {
+      const cp = r2(brutMois * taux / 100);
+      if (cp) lignes.push({ cle: 'cp', libelle: `Congés payés (${taux} % du mois)`, qte: null, taux: null, brut: cp });
+      // En juin, on compare au maintien de salaire sur la période écoulée.
+      if (m === 6) {
+        detail = congesPayes(y, days, s);
+        const complement = r2(detail.maintien - detail.dixieme);
+        if (detail.mois && complement > 0) lignes.push({
+          cle: 'cp-compl', libelle: `Complément congés payés ${detail.periode} (maintien de salaire)`,
+          qte: null, taux: null, brut: complement
+        });
+      }
+    } else {
+      const moisPaiement = s.cpMode === 'prise' ? (Number(s.cpMoisPrise) || 6) : 6;
+      if (m === moisPaiement) {
+        detail = congesPayes(m >= 6 ? y : y - 1, days, s);
+        if (detail.mois && detail.du) lignes.push({
+          cle: 'cp', libelle: `Congés payés ${detail.periode} (${detail.jours} j, ${detail.regle})`,
+          qte: null, taux: null, brut: detail.du
+        });
+      }
     }
+    return { lignes, detail };
+  }
 
+  /* ---------- Régularisation annuelle (année incomplète) ---------- */
+
+  /**
+   * À la date anniversaire du contrat, compare les heures dues sur les 12 mois écoulés
+   * (heures d'accueil dans la limite du contrat + absences rémunérées) aux heures payées
+   * par la mensualisation. Un solde positif est versé ; un trop-payé n'est pas retenu.
+   */
+  function regularisation(mk, days, s) {
+    const debut = dateContrat(s);
+    if (!debut || s.mode !== 'mensualisation' || anneeComplete(s)) return null;
+    if (mk.slice(5) !== debut.slice(5, 7) || mk <= debut.slice(0, 7)) return null;
+
+    const mois = moisEntre(shiftMonth(mk, -12), shiftMonth(mk, -1)).filter(m => m >= debut.slice(0, 7));
+    let heuresPayees = 0, heuresDues = 0;
+    for (const m of mois) {
+      const b = baseMois(m, days, s);
+      heuresPayees += b.heuresBase;
+      heuresDues += b.heuresDues;
+    }
+    heuresPayees = r2(heuresPayees);
+    heuresDues = r2(heuresDues);
+    const ecart = r2(heuresDues - heuresPayees);
+    return {
+      du: mois[0], au: mois.at(-1),
+      heuresDues, heuresPayees, ecart,
+      montant: ecart > 0 ? r2(ecart * tauxHoraire(s).brut) : 0
+    };
+  }
+
+  /* ---------- Calcul mensuel complet ---------- */
+
+  /**
+   * @param {string} mk       mois 'YYYY-MM'
+   * @param {object} days     dictionnaire { 'YYYY-MM-DD': jour } (tout l'historique :
+   *                          congés payés et régularisation portent sur plusieurs mois)
+   * @param {object} s        paramètres (settings)
+   * @returns un objet de synthèse prêt à afficher.
+   */
+  function month(mk, days, s) {
+    const b = baseMois(mk, days, s);
+    const { t, entries, presents, sem, deduits, hComp, hMaj1, hMaj2 } = b;
+    const cot = (Number(s.tauxCotisations) || 0) / 100;
+    const repasActifs = (s.repas || []).filter(r => r.actif);
+
+    const saisis = entries.filter(e => e.heures > 0 || e.statut !== 'present');
+    const totalHeures = r4(presents.reduce((a, e) => a + e.heures, 0));
+    const joursPresence = presents.length;
+    const totalKm = r2(entries.reduce((a, e) => a + e.km, 0));
+
+    const lignes = [...b.lignes];
+
+    const regul = regularisation(mk, days, s);
+    if (regul && regul.montant > 0) lignes.push({
+      cle: 'regul', libelle: 'Régularisation annuelle',
+      qte: regul.ecart, taux: t.brut, brut: regul.montant
+    });
+
+    // Le dixième mensuel porte sur la rémunération du mois, régularisation comprise.
+    const brutAvantCP = r2(lignes.reduce((a, l) => a + l.brut, 0));
+    const cp = lignesCP(mk, brutAvantCP, days, s);
+    lignes.push(...cp.lignes);
+
+    const brutTotal = r2(lignes.reduce((a, l) => a + l.brut, 0));
     const cotisations = r2(brutTotal * cot);
     const netSalaire = r2(brutTotal - cotisations);
 
@@ -385,7 +529,7 @@ const Calc = (() => {
       totalHeures,
       totalKm,
       semaines: sem,
-      heures: { normales: hNorm, complementaires: hComp, maj1: hMaj1, maj2: hMaj2 },
+      heures: { normales: b.hNorm, complementaires: hComp, maj1: hMaj1, maj2: hMaj2 },
       lignes,
       brut: brutTotal,
       cotisations,
@@ -397,11 +541,14 @@ const Calc = (() => {
       indemnites,
       netAPayer: r2(netSalaire + indemnites),
       absencesDeduites: deduits.map(e => e.date),
+      congesPayes: cp.detail,
+      regularisation: regul,
       // Ce que Pajemploi attend dans la déclaration mensuelle
       pajemploi: {
         // Heures normales = salaire net de base versé ÷ taux horaire net, soit les heures
-        // mensualisées réduites au prorata des absences non rémunérées.
-        heures: r2(heuresBase + hComp),
+        // mensualisées réduites au prorata des absences non rémunérées, plus les heures
+        // complémentaires et celles versées au titre de la régularisation.
+        heures: r2(b.heuresBase + hComp + (regul && regul.ecart > 0 ? regul.ecart : 0)),
         heuresMajorees: r4(hMaj1 + hMaj2),
         joursActivite: s.mode === 'mensualisation'
           ? Math.max(joursMensualises(s) - deduits.length, 0) : joursPresence,
@@ -449,6 +596,7 @@ const Calc = (() => {
     DEFAULTS, ABSENCES, MOIS,
     isoDate, parseISO, monthKey, weekKey, daysOfMonth, shiftMonth,
     r2, r3, r4, tauxHoraire, salaireMensualise, heuresMensualisees, joursMensualises, absenceDeduite,
+    anneeComplete, cpEnSus, congesPayes, regularisation, NOMS_MOIS,
     entretienJour, weeks, month,
     fmtEur, fmtEurTaux, fmtNum, fmtH, fmtMois, fmtJour
   };
