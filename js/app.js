@@ -67,6 +67,7 @@
     const cards = [
       { v: Calc.fmtH(resume.totalHeures), l: 'Heures' },
       { v: resume.joursPresence, l: 'Jours' },
+      { v: resume.pajemploi.joursActivite, l: 'Jours Pajemploi' },
       {
         v: cible !== null ? (ecart >= 0 ? '+' : '−') + Calc.fmtH(Math.abs(ecart)) : Calc.fmtH(resume.heures.maj1 + resume.heures.maj2),
         l: cible !== null ? 'vs mensualisé' : 'Majorées'
@@ -147,7 +148,8 @@
   /* Abréviations tenant dans une case du calendrier ; l'étiquette vocale, elle,
      donne le libellé complet. */
   const abbrev = statut => ({
-    absent: 'abs', conge: 'congé', ferie: 'férié', maladie: 'mal'
+    absent: 'abs', conge: 'CP', ferie: 'férié', maladie: 'mal',
+    maladieCertif: 'mal+', hospitalisation: 'hosp', absenceAssmat: 'abs am'
   }[statut] || '');
 
   /** Étiquette lue par les lecteurs d'écran : date, puis état de la journée. */
@@ -166,6 +168,13 @@
 
   $('#mois-prev').addEventListener('click', () => { moisCal = Calc.shiftMonth(moisCal, -1); renderCalendrier(); });
   $('#mois-next').addEventListener('click', () => { moisCal = Calc.shiftMonth(moisCal, 1);  renderCalendrier(); });
+  // Ouvre la fiche du mois affiché, directement sur le bloc à reporter dans Pajemploi.
+  $('#btn-voir-paje').addEventListener('click', () => {
+    moisPaie = moisCal;
+    showView('paie');
+    // showView remonte en haut de page : on descend au bloc à l'image suivante.
+    requestAnimationFrame(() => { const bloc = $('#paje'); if (bloc) bloc.scrollIntoView({ block: 'start' }); });
+  });
   $('#mois-today').addEventListener('click', () => { moisCal = Calc.monthKey(new Date());   renderCalendrier(); });
 
   /* ---------- Remplissage rapide ---------- */
@@ -260,7 +269,7 @@
     $('#dlg-note').value = brouillon.note;
 
     $('#dlg-statut').innerHTML = Object.entries(Calc.ABSENCES).map(([k, v]) =>
-      `<button type="button" class="chip" data-statut="${k}" aria-pressed="${brouillon.statut === k}">${v.label}</button>`
+      `<option value="${k}">${v.label}</option>`
     ).join('');
 
     const quick = [...new Set([Number(settings.typeHeures) || 0, 4, 6, 8, 9, 10, 11])]
@@ -279,8 +288,7 @@
     $('#fs-repas').hidden = !present || repasActifs().length === 0;
     $('#dlg-heures').value = brouillon.heures || 0;
 
-    $$('#dlg-statut .chip').forEach(c =>
-      c.setAttribute('aria-pressed', String(c.dataset.statut === brouillon.statut)));
+    $('#dlg-statut').value = brouillon.statut;
 
     const ent = Calc.entretienJour(present ? brouillon.heures : 0, settings);
     $('#dlg-entretien').textContent = present && ent
@@ -301,9 +309,6 @@
   }
 
   dlg.addEventListener('click', e => {
-    const st = e.target.closest('[data-statut]');
-    if (st) { brouillon.statut = st.dataset.statut; return syncDialogue(); }
-
     const q = e.target.closest('[data-quick]');
     if (q) { brouillon.heures = Number(q.dataset.quick); return syncDialogue(); }
 
@@ -320,6 +325,11 @@
       brouillon.repas[id] = Math.min(5, Math.max(0, v));
       return syncDialogue();
     }
+  });
+
+  $('#dlg-statut').addEventListener('change', e => {
+    brouillon.statut = e.target.value;
+    syncDialogue();
   });
 
   $('#dlg-heures').addEventListener('input', e => {
@@ -517,7 +527,16 @@
       </tr>`).join('');
 
     const avertissements = [];
-    if (s.mode === 'mensualisation' && r.totalHeures < Calc.heuresMensualisees(s) - 0.01) {
+    if (r.absencesDeduites.length) {
+      avertissements.push(`${r.absencesDeduites.length} jour${r.absencesDeduites.length > 1 ? 's' : ''} d’absence ` +
+        `non rémunéré${r.absencesDeduites.length > 1 ? 's' : ''} (${r.absencesDeduites.map(Calc.fmtJour).join(', ')}) : ` +
+        'retenue calculée selon la méthode de la Cour de cassation, déduits des jours et heures déclarés.');
+    }
+    if (s.mode === 'mensualisation' && !s.debutContrat && r.jours.some(j => j.statut === 'maladieCertif')) {
+      avertissements.push('Date de début de contrat non renseignée : le quota de 5 jours d’enfant malade ' +
+        'avec certificat est apprécié sur l’année civile.');
+    }
+    if (s.mode === 'mensualisation' && r.totalHeures < Calc.heuresMensualisees(s) - 0.01 && !r.absencesDeduites.length) {
       avertissements.push(`Les heures réellement effectuées (${Calc.fmtH(r.totalHeures)}) sont inférieures aux ` +
         `${Calc.fmtH(Calc.heuresMensualisees(s))} mensualisées : le salaire de base reste dû en intégralité.`);
     }
@@ -572,10 +591,11 @@
           <b>${Calc.fmtEur(r.netAPayer)}</b>
         </div>
 
-        <div class="paje">
+        <div class="paje" id="paje">
           <h3>À reporter dans la déclaration Pajemploi</h3>
           <dl>
             <dt>Nombre d’heures normales</dt><dd>${Calc.fmtNum(r.pajemploi.heures)}</dd>
+            ${r.pajemploi.heuresMajorees ? `<dt>Nombre d’heures majorées</dt><dd>${Calc.fmtNum(r.pajemploi.heuresMajorees)}</dd>` : ''}
             <dt>Nombre de jours d’activité</dt><dd>${r.pajemploi.joursActivite}</dd>
             <dt>Salaire net</dt><dd>${Calc.fmtEur(r.pajemploi.salaireNet)}</dd>
             <dt>Indemnités d’entretien</dt><dd>${Calc.fmtEur(r.pajemploi.indemnitesEntretien)}</dd>
@@ -615,7 +635,8 @@
     const r = Calc.month(moisPaie, days, settings).pajemploi;
     const txt = [
       `Pajemploi — ${Calc.fmtMois(moisPaie)}`,
-      `Heures : ${Calc.fmtNum(r.heures)}`,
+      `Heures normales : ${Calc.fmtNum(r.heures)}`,
+      ...(r.heuresMajorees ? [`Heures majorées : ${Calc.fmtNum(r.heuresMajorees)}`] : []),
       `Jours d'activité : ${r.joursActivite}`,
       `Salaire net : ${Calc.fmtNum(r.salaireNet)} €`,
       `Indemnités d'entretien : ${Calc.fmtNum(r.indemnitesEntretien)} €`,

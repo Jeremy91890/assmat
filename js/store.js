@@ -108,7 +108,7 @@ const Store = (() => {
     lines.push('');
     lines.push(['TOTAUX'].join(sep));
     lines.push(['Heures totales', Calc.fmtNum(resume.totalHeures)].map(esc).join(sep));
-    lines.push(['Jours d’activité', resume.joursPresence].map(esc).join(sep));
+    lines.push(['Jours de présence', resume.joursPresence].map(esc).join(sep));
     for (const l of resume.lignes) {
       lines.push([l.libelle, Calc.fmtNum(l.brut)].map(esc).join(sep));
     }

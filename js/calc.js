@@ -23,6 +23,7 @@ const Calc = (() => {
     joursSemaine: 4,          // jours d'accueil prévus au contrat
     joursAccueil: [1, 2, 3, 4], // jours de la semaine gardés (1 = lundi … 7 = dimanche)
     semainesAn: 52,           // 52 = année complète, sinon année incomplète
+    debutContrat: '',         // 'YYYY-MM-DD' : borne l'année contractuelle (quota enfant malade)
     seuilMajoration: 45,      // au-delà : heures majorées
     majoration1: 25,          // % sur les 8 premières heures au-delà du seuil
     majoration2: 50,          // % au-delà
@@ -55,13 +56,25 @@ const Calc = (() => {
     typeRepas: { pdej: 0, dej: 1, gouter: 0 }
   };
 
+  /* Effet de chaque statut sur le salaire mensualisé :
+     - 'maintenu' : salaire dû en intégralité (convenance du parent, maladie sans certificat…)
+     - 'deduit'   : absence non rémunérée (absence de l'assmat hors congés payés)
+     - 'quota'    : enfant malade avec certificat, déductible 5 jours par année contractuelle
+     - 'hospit'   : hospitalisation de l'enfant, déductible 14 jours consécutifs
+     Les indemnités d'entretien et de repas ne sont dues que les jours de présence. */
   const ABSENCES = {
-    present:  { label: 'Présent',            paye: true  },
-    absent:   { label: 'Absence enfant',     paye: false },
-    conge:    { label: 'Congé assmat',       paye: false },
-    ferie:    { label: 'Jour férié',         paye: false },
-    maladie:  { label: 'Maladie enfant',     paye: false }
+    present:         { label: 'Présent',                          effet: 'maintenu' },
+    absent:          { label: 'Absence enfant (convenance)',      effet: 'maintenu' },
+    maladie:         { label: 'Enfant malade sans certificat',    effet: 'maintenu' },
+    maladieCertif:   { label: 'Enfant malade avec certificat',    effet: 'quota'    },
+    hospitalisation: { label: 'Hospitalisation enfant',           effet: 'hospit'   },
+    conge:           { label: 'Congés payés assmat',              effet: 'maintenu' },
+    absenceAssmat:   { label: 'Absence assmat (maladie, sans solde…)', effet: 'deduit' },
+    ferie:           { label: 'Jour férié',                       effet: 'maintenu' }
   };
+
+  const QUOTA_MALADIE_CERTIF = 5;    // jours par année contractuelle
+  const QUOTA_HOSPITALISATION = 14;  // jours calendaires consécutifs
 
   /* ---------- Utilitaires de date ---------- */
 
@@ -143,6 +156,60 @@ const Calc = (() => {
   /** Heures rémunérées chaque mois au titre de la mensualisation. */
   function heuresMensualisees(s) {
     return (Number(s.heuresSemaine) || 0) * (Number(s.semainesAn) || 0) / 12;
+  }
+
+  /** Jours d'activité mensualisés = jours/semaine × semaines/an ÷ 12, arrondi à l'entier supérieur. */
+  function joursMensualises(s) {
+    return Math.ceil(r4((Number(s.joursSemaine) || 0) * (Number(s.semainesAn) || 0) / 12));
+  }
+
+  /* ---------- Absences déductibles ---------- */
+
+  /** Début de l'année contractuelle contenant `date` (année civile à défaut de date de contrat). */
+  function debutAnneeContrat(date, s) {
+    const d = parseISO(date);
+    const debut = /^\d{4}-\d{2}-\d{2}$/.test(s.debutContrat || '') ? parseISO(s.debutContrat) : null;
+    if (!debut) return `${d.getFullYear()}-01-01`;
+    let y = d.getFullYear();
+    const anniv = y => isoDate(new Date(y, debut.getMonth(), debut.getDate(), 12));
+    if (anniv(y) > date) y--;
+    return anniv(y);
+  }
+
+  /** Décale une date 'YYYY-MM-DD' de `delta` jours. */
+  function shiftDay(date, delta) {
+    const d = parseISO(date);
+    d.setDate(d.getDate() + delta);
+    return isoDate(d);
+  }
+
+  const dow = date => ((parseISO(date).getDay() + 6) % 7) + 1; // 1 = lundi … 7 = dimanche
+
+  /**
+   * La journée `date` (absence) est-elle retenue sur le salaire ?
+   * `days` doit contenir tout l'historique : les quotas s'apprécient sur l'année contractuelle.
+   */
+  function absenceDeduite(date, days, s) {
+    const effet = (ABSENCES[(days[date] || {}).statut] || {}).effet;
+    if (effet === 'deduit') return true;
+    if (effet === 'quota') {
+      const debut = debutAnneeContrat(date, s);
+      const rang = Object.keys(days)
+        .filter(d => d >= debut && d <= date && days[d].statut === 'maladieCertif').length;
+      return rang <= QUOTA_MALADIE_CERTIF;
+    }
+    if (effet === 'hospit') {
+      // Remonte au premier jour de l'hospitalisation, en enjambant les jours sans accueil.
+      const accueil = s.joursAccueil || [];
+      let debut = date;
+      for (let prev = shiftDay(date, -1), n = 0; n < 366; prev = shiftDay(prev, -1), n++) {
+        const j = days[prev];
+        if (j && j.statut === 'hospitalisation') debut = prev;
+        else if (j || accueil.includes(dow(prev))) break;
+      }
+      return (parseISO(date) - parseISO(debut)) / 864e5 < QUOTA_HOSPITALISATION;
+    }
+    return false;
   }
 
   /* ---------- Indemnité d'entretien ---------- */
@@ -263,6 +330,29 @@ const Calc = (() => {
       qte: hMaj2, taux: r4(t.brut * cf2), brut: r2(hMaj2 * t.brut * cf2)
     });
 
+    /* --- Absences non rémunérées (méthode de la Cour de cassation) ---
+       Retenue = salaire mensualisé × heures d'absence ÷ heures qui auraient dû être
+       travaillées dans le mois. */
+    const deduits = s.mode === 'mensualisation'
+      ? entries.filter(e => e.statut !== 'present' && absenceDeduite(e.date, days, s)) : [];
+    const accueil = s.joursAccueil || [];
+    const joursTheoriques = daysOfMonth(mk).filter(d => accueil.includes(dow(d))).length;
+    const hJour = accueil.length ? (Number(s.heuresSemaine) || 0) / accueil.length : 0;
+    const ratioAbsence = joursTheoriques ? Math.min(deduits.length / joursTheoriques, 1) : 0;
+    let heuresBase = s.mode === 'mensualisation' ? heuresMensualisees(s) : hNorm;
+    if (deduits.length) {
+      const base = lignes[0];
+      const hAbs = r4(deduits.length * hJour);
+      lignes.push({
+        cle: 'absence',
+        libelle: `Absence non rémunérée (${deduits.length} j)`,
+        qte: hAbs,
+        taux: hAbs ? r4(base.brut * ratioAbsence / hAbs) : null,
+        brut: -r2(base.brut * ratioAbsence)
+      });
+      heuresBase = heuresBase * (1 - ratioAbsence);
+    }
+
     let brutTotal = r2(lignes.reduce((a, l) => a + l.brut, 0));
 
     if (s.cpActif) {
@@ -278,7 +368,7 @@ const Calc = (() => {
     const entretien = r2(presents.reduce((a, e) => a + entretienJour(e.heures, s), 0));
 
     const repasDetail = repasActifs.map(r => {
-      const nb = entries.reduce((a, e) => a + (Number(e.repas[r.id]) || 0), 0);
+      const nb = presents.reduce((a, e) => a + (Number(e.repas[r.id]) || 0), 0);
       return { id: r.id, label: r.label, nb, prix: Number(r.prix) || 0, total: r2(nb * (Number(r.prix) || 0)) };
     }).filter(r => r.nb > 0);
 
@@ -306,10 +396,15 @@ const Calc = (() => {
       kmTotal,
       indemnites,
       netAPayer: r2(netSalaire + indemnites),
+      absencesDeduites: deduits.map(e => e.date),
       // Ce que Pajemploi attend dans la déclaration mensuelle
       pajemploi: {
-        heures: totalHeures,
-        joursActivite: joursPresence,
+        // Heures normales = salaire net de base versé ÷ taux horaire net, soit les heures
+        // mensualisées réduites au prorata des absences non rémunérées.
+        heures: r2(heuresBase + hComp),
+        heuresMajorees: r4(hMaj1 + hMaj2),
+        joursActivite: s.mode === 'mensualisation'
+          ? Math.max(joursMensualises(s) - deduits.length, 0) : joursPresence,
         salaireNet: netSalaire,
         indemnitesEntretien: entretien,
         indemnitesRepas: repasTotal,
@@ -353,7 +448,7 @@ const Calc = (() => {
   return {
     DEFAULTS, ABSENCES, MOIS,
     isoDate, parseISO, monthKey, weekKey, daysOfMonth, shiftMonth,
-    r2, r3, r4, tauxHoraire, salaireMensualise, heuresMensualisees,
+    r2, r3, r4, tauxHoraire, salaireMensualise, heuresMensualisees, joursMensualises, absenceDeduite,
     entretienJour, weeks, month,
     fmtEur, fmtEurTaux, fmtNum, fmtH, fmtMois, fmtJour
   };

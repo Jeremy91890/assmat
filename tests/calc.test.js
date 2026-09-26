@@ -125,9 +125,12 @@ console.log('\nMois complet — mensualisation, 4 j/sem. × 9 h');
     assert.strictEqual(r.cotisations, Calc.r2(r.brut * 0.22));
   });
   test('le récap Pajemploi reprend les mêmes totaux', () => {
-    assert.strictEqual(r.pajemploi.heures, r.totalHeures);
+    assert.strictEqual(r.pajemploi.heures, Calc.r2(Calc.heuresMensualisees(s)));
     assert.strictEqual(r.pajemploi.salaireNet, r.netSalaire);
     assert.strictEqual(r.pajemploi.indemnitesEntretien, r.entretien);
+  });
+  test('Pajemploi : jours d’activité = jours mensualisés arrondis au supérieur', () => {
+    assert.strictEqual(r.pajemploi.joursActivite, 16); // 4 × 47 / 12 = 15,67
   });
 }
 
@@ -145,8 +148,100 @@ console.log('\nAbsences');
     assert.strictEqual(r.joursPresence, 1);
     assert.strictEqual(r.entretien, 3.83);
   });
-  test('mais les repas déjà saisis restent comptés tels quels', () => {
-    assert.strictEqual(r.repasDetail[0].nb, 2);
+  test('les repas ne sont dus que les jours de présence', () => {
+    assert.strictEqual(r.repasDetail[0].nb, 1);
+  });
+}
+
+console.log('\nAbsences — mensualisation (Pajemploi)');
+{
+  // 4 j/sem. (lun.–jeu.) × 9 h, 52 sem. : 156 h et 18 jours mensualisés.
+  // Septembre 2026 compte 18 lundis–jeudis.
+  const s = S({ heuresSemaine: 36, joursSemaine: 4, semainesAn: 52, tauxSaisi: 4, debutContrat: '2026-01-05' });
+  const presence = () => {
+    const days = {};
+    for (const d of Calc.daysOfMonth('2026-09')) {
+      const dow = (Calc.parseISO(d).getDay() + 6) % 7;
+      if (dow <= 3) days[d] = { statut: 'present', heures: 9, repas: { dej: 1 } };
+    }
+    return days;
+  };
+  const avec = (statuts, avant = {}) => {
+    const days = { ...avant, ...presence() };
+    for (const [d, st] of Object.entries(statuts)) days[d] = { statut: st, heures: 0, repas: {} };
+    return Calc.month('2026-09', days, s);
+  };
+  const normal = avec({});
+
+  test('mois complet : 156 h et 18 jours déclarés', () => {
+    assert.strictEqual(normal.pajemploi.heures, 156);
+    assert.strictEqual(normal.pajemploi.joursActivite, 18);
+  });
+
+  for (const st of ['absent', 'maladie', 'conge', 'ferie']) {
+    const r = avec({ '2026-09-08': st, '2026-09-09': st });
+    test(`${Calc.ABSENCES[st].label} : salaire et déclaration inchangés`, () => {
+      assert.strictEqual(r.brut, normal.brut);
+      assert.strictEqual(r.pajemploi.heures, 156);
+      assert.strictEqual(r.pajemploi.joursActivite, 18);
+    });
+    test(`${Calc.ABSENCES[st].label} : entretien et repas retirés`, () => {
+      assert.strictEqual(r.entretien, Calc.r2(normal.entretien - 2 * 3.83));
+      assert.strictEqual(r.repasTotal, Calc.r2(normal.repasTotal - 2 * 5.50));
+    });
+  }
+
+  const aa = avec({ '2026-09-08': 'absenceAssmat', '2026-09-09': 'absenceAssmat' });
+  test('absence assmat : retenue Cour de cassation = base × 2 / 18', () => {
+    const base = Calc.salaireMensualise(s).brut;
+    assert.strictEqual(aa.lignes[1].brut, -Calc.r2(base * 2 / 18));
+    assert.strictEqual(aa.brut, Calc.r2(base - Calc.r2(base * 2 / 18)));
+  });
+  test('absence assmat : jours = 18 − 2, heures = net versé ÷ taux net', () => {
+    assert.strictEqual(aa.pajemploi.joursActivite, 16);
+    assert.strictEqual(aa.pajemploi.heures, Calc.r2(156 * 16 / 18));
+    assert.ok(Math.abs(aa.pajemploi.heures - aa.netSalaire / aa.taux.net) < 0.05);
+  });
+
+  test('enfant malade avec certificat, dans le quota : retenu', () => {
+    const r = avec({ '2026-09-08': 'maladieCertif' });
+    assert.strictEqual(r.pajemploi.joursActivite, 17);
+    assert.ok(r.brut < normal.brut);
+  });
+  test('enfant malade avec certificat, au-delà de 5 j sur l’année contractuelle : maintenu', () => {
+    const avant = {};
+    for (const d of ['2026-03-02', '2026-03-03', '2026-03-04', '2026-06-01'])
+      avant[d] = { statut: 'maladieCertif', heures: 0 };
+    const r = avec({ '2026-09-08': 'maladieCertif', '2026-09-09': 'maladieCertif' }, avant);
+    // 5e jour retenu, 6e maintenu
+    assert.deepStrictEqual(r.absencesDeduites, ['2026-09-08']);
+    assert.strictEqual(r.pajemploi.joursActivite, 17);
+  });
+  test('le quota repart à la date anniversaire du contrat', () => {
+    const avant = {};
+    for (const d of ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-12-01'])
+      avant[d] = { statut: 'maladieCertif', heures: 0 };
+    const r = Calc.month('2026-09', { ...avant, '2026-09-08': { statut: 'maladieCertif' } },
+      { ...s, debutContrat: '2025-01-05' });
+    assert.deepStrictEqual(r.absencesDeduites, ['2026-09-08']);
+  });
+
+  test('hospitalisation : 14 jours consécutifs retenus, weekends compris, puis maintenu', () => {
+    const st = {};
+    for (const d of Calc.daysOfMonth('2026-09')) {
+      const dow = (Calc.parseISO(d).getDay() + 6) % 7;
+      if (d >= '2026-09-07' && d <= '2026-09-24' && dow <= 3) st[d] = 'hospitalisation';
+    }
+    const r = avec(st);
+    // Du lun. 7 au dim. 20 : 8 jours d'accueil retenus ; 21–24 au-delà du 14e jour.
+    assert.strictEqual(r.absencesDeduites.length, 8);
+    assert.ok(r.absencesDeduites.every(d => d <= '2026-09-20'));
+  });
+
+  const reel = Calc.month('2026-09', { '2026-09-08': { statut: 'absenceAssmat' } }, S({ mode: 'reel' }));
+  test('paiement au réel : jours réels, pas de retenue', () => {
+    assert.strictEqual(reel.pajemploi.joursActivite, 0);
+    assert.strictEqual(reel.absencesDeduites.length, 0);
   });
 }
 

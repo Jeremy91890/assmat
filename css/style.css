@@ -234,7 +234,7 @@ label small {
   color: var(--on-surface-variant);
 }
 
-input[type=text], input[type=number], select, output {
+input[type=text], input[type=number], input[type=date], select, output {
   display: block; width: 100%; margin-top: var(--stack-sm);
   padding: 12px 18px;
   font-family: 'Nunito Sans', sans-serif; font-size: 16px; line-height: 24px;
@@ -356,10 +356,13 @@ legend {
 /* ---------- Statistiques ---------- */
 
 .stats {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--stack-sm);
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--stack-sm);
   margin: 0 0 var(--stack-md);
 }
-@media (max-width: 620px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stats .stat.hero { grid-column: span 2; }  /* 5 cartes : le net à payer occupe la dernière ligne */
+}
 
 .stat {
   background: var(--surf-lowest);
@@ -540,7 +543,19 @@ dialog[open] { display: flex; flex-direction: column; animation: up .24s cubic-b
   display: flex; align-items: center; gap: var(--stack-sm);
   padding: var(--stack-md) var(--pad) calc(var(--stack-md) + var(--safe-b));
   background: var(--surf-low);
+  border-top: 1px solid var(--outline-variant);
 }
+.dlg-statut { display: block; margin-bottom: var(--stack-md); }
+
+/* Actions du dialogue : Enregistrer bien contrasté, Annuler et Effacer bordés. */
+.dlg-foot .btn { padding: 14px 22px; font-size: 15px; }
+.dlg-foot .btn.primary {
+  flex: 1;
+  background: var(--primary); border-color: var(--primary); color: var(--on-primary);
+}
+.dlg-foot .btn.primary:hover { background: var(--on-primary-fixed); border-color: var(--on-primary-fixed); }
+.dlg-foot .btn.ghost { border-color: var(--outline-variant); color: var(--on-surface); }
+.dlg-foot .btn.danger.ghost { border-color: var(--error); color: var(--error); }
 
 /* ---------- Fiche de paie ---------- */
 
@@ -614,7 +629,8 @@ table.paie-t tr.neg td { color: var(--error); }
 }
 
 /* À reporter dans Pajemploi : jaune soleil, un rappel qui aide. */
-.paje { background: var(--quaternary-container); border-radius: var(--r-lg); padding: var(--pad); margin-bottom: var(--stack-lg); }
+.btn-paje { display: block; width: 100%; margin: 0 0 var(--stack-md); }
+.paje { scroll-margin-top: 96px; background: var(--quaternary-container); border-radius: var(--r-lg); padding: var(--pad); margin-bottom: var(--stack-lg); }
 .paje h3 {
   font-family: 'Nunito Sans', sans-serif;
   font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: .05em;

@@ -52,6 +52,8 @@
 
     <div class="stats" id="stats"></div>
 
+    <button class="btn primary btn-paje" id="btn-voir-paje">Voir la déclaration Pajemploi du mois</button>
+
     <div class="card">
       <div class="cal-head" aria-hidden="true">
         <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span>
@@ -115,6 +117,7 @@
         <div class="grid2">
           <label>Taux horaire
             <input type="number" name="tauxSaisi" step="0.001" min="0" inputmode="decimal">
+            <small>Le salaire à payer et à déclarer à Pajemploi est le <strong>net</strong>.</small>
           </label>
           <label>Ce taux est
             <select name="tauxType">
@@ -146,6 +149,10 @@
           <label>Semaines / an
             <input type="number" name="semainesAn" step="1" min="1" max="52" inputmode="numeric">
             <small>52 = année complète.</small>
+          </label>
+          <label>Début du contrat
+            <input type="date" name="debutContrat">
+            <small>Borne l’année contractuelle (quota enfant malade).</small>
           </label>
           <label class="readout">Salaire mensualisé
             <output id="mens-readout">—</output>
@@ -228,10 +235,7 @@
     </header>
 
     <div class="dlg-body">
-      <fieldset>
-        <legend>Statut</legend>
-        <div class="chips" id="dlg-statut"></div>
-      </fieldset>
+      <label class="dlg-statut">Statut<select id="dlg-statut"></select></label>
 
       <fieldset id="fs-heures">
         <legend>Heures de présence</legend>
@@ -259,7 +263,6 @@
 
     <footer class="dlg-foot">
       <button class="btn danger ghost" value="delete" type="submit" formnovalidate>Effacer</button>
-      <span class="spacer"></span>
       <button class="btn ghost" value="cancel" type="submit" formnovalidate>Annuler</button>
       <button class="btn primary" value="save" type="submit">Enregistrer</button>
     </footer>
