@@ -7,6 +7,14 @@
   document.querySelectorAll('[data-don]').forEach(a =>
     a.addEventListener('click', () => Analytics.event(`don-${a.dataset.don}`)));
 
+  const dejaInstalle = () =>
+    window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+
+  // App installée : la place du bouton « Installer » revient au libellé « Soutenir »
+  // (la media query CSS suffit ailleurs, mais iOS ne l'honore pas partout).
+  document.documentElement.classList.toggle('app-installee', dejaInstalle());
+
   const btn = document.getElementById('btn-install');
   const dlg = document.getElementById('dlg-install');
   if (!btn) return;
@@ -15,9 +23,6 @@
   // menu Partager. On affiche donc le bouton d'emblée avec la marche à suivre.
   const estIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS se déclare macOS
-  const dejaInstalle = () =>
-    window.navigator.standalone === true
-    || window.matchMedia('(display-mode: standalone)').matches;
 
   let promptInstall = null;
   window.addEventListener('beforeinstallprompt', e => {

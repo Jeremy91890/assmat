@@ -202,6 +202,9 @@ a.btn svg { width: 18px; height: 18px; flex: none; }
   .btn-install .lbl-court { display: none; }
   .topbar-in { gap: 4px; }
 }
+/* App installée : le bouton « Installer » a disparu, le libellé « Soutenir » reprend sa place. */
+@media (display-mode: standalone) { .btn-don span { display: inline; } }
+.app-installee .btn-don span { display: inline; }
 .card-don .btn { margin: var(--stack-sm) 0; }
 .card-don .btn svg { color: var(--error); }
 .small { font-size: 13px; line-height: 18px; }
