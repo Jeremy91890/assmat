@@ -40,6 +40,11 @@ le nombre de repas, éventuellement des kilomètres et une note, ou un statut d'
 passe en orange au-delà du seuil de majoration. Le remplissage rapide applique la journée
 type aux jours d'accueil du contrat sans écraser ce qui existe déjà.
 
+**Plusieurs enfants** — un contrat par enfant, chacun avec ses paramètres, ses journées, sa
+fiche de paie et sa déclaration Pajemploi. Une rangée de pastilles colorées en haut de l'écran
+permet de passer de l'un à l'autre ; « ＋ Ajouter un enfant » copie les paramètres du contrat
+affiché. La couleur (6 teintes) se choisit dans les paramètres et teinte le calendrier.
+
 **Paramètres** — taux horaire (saisi en brut ou en net, l'autre étant déduit du taux de
 cotisations), mode de paiement, type d'année (complète / incomplète), date de début du contrat,
 volume contractuel, seuils et taux de majoration, barème

@@ -54,9 +54,23 @@ const Calc = (() => {
     cpMoisPrise: 8,           // mois de la prise principale (1 = janvier … 12 = décembre)
     cpTaux: 10,               // % : règle du dixième
 
+    // Couleur du contrat (repère visuel quand plusieurs enfants sont gardés)
+    couleur: 'ciel',
+
     // Journée type (pré-remplissage rapide)
     typeHeures: 9,
     typeRepas: { pdej: 0, dej: 1, gouter: 0 }
+  };
+
+  /* Palette des contrats : `fond` teinte les jours et pastilles, `accent` sert aux points
+     et bordures (le texte reste sombre, lisible sur le fond). */
+  const COULEURS = {
+    ciel:    { label: 'Ciel',    fond: '#dbeefd', accent: '#4a90c2' },
+    rose:    { label: 'Rose',    fond: '#fbe0ec', accent: '#c2577f' },
+    menthe:  { label: 'Menthe',  fond: '#d9f2e5', accent: '#3f9a6d' },
+    peche:   { label: 'Pêche',   fond: '#fde5d2', accent: '#c7773a' },
+    lavande: { label: 'Lavande', fond: '#e6e0f8', accent: '#7a66c2' },
+    citron:  { label: 'Citron',  fond: '#f7f0c6', accent: '#a38a1c' }
   };
 
   /* Effet de chaque statut sur le salaire mensualisé :
@@ -593,7 +607,7 @@ const Calc = (() => {
   }
 
   return {
-    DEFAULTS, ABSENCES, MOIS,
+    DEFAULTS, ABSENCES, MOIS, COULEURS,
     isoDate, parseISO, monthKey, weekKey, daysOfMonth, shiftMonth,
     r2, r3, r4, tauxHoraire, salaireMensualise, heuresMensualisees, joursMensualises, absenceDeduite,
     anneeComplete, cpEnSus, congesPayes, regularisation, NOMS_MOIS,

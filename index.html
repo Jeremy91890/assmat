@@ -86,6 +86,9 @@
 
 <main>
 
+  <!-- ============ CONTRATS (un par enfant) ============ -->
+  <div class="contrats no-print" id="contrats" role="toolbar" aria-label="Enfants gardés"></div>
+
   <!-- ============ CALENDRIER ============ -->
   <section id="vue-calendrier" class="view is-active" role="tabpanel">
     <div class="monthnav">
@@ -157,6 +160,11 @@
           <label>Assistante maternelle<input type="text" name="assmat" placeholder="Nom"></label>
           <label class="span2">Employeur (parent)<input type="text" name="employeur" placeholder="Nom"></label>
         </div>
+        <fieldset class="couleurs-contrat">
+          <legend>Couleur du contrat</legend>
+          <div class="chips" id="couleurs-contrat"></div>
+        </fieldset>
+        <button type="button" class="btn danger ghost" id="btn-suppr-contrat">Supprimer ce contrat</button>
       </div>
 
       <div class="card">

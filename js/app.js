@@ -37,6 +37,65 @@
   // Lien externe simple : seul le clic est compté (sans donnée personnelle).
   $$('[data-don]').forEach(a => a.addEventListener('click', () => Analytics.event(`don-${a.dataset.don}`)));
 
+  /* ---------- Contrats (un par enfant) ---------- */
+
+  const nomContrat = (c, i) => (c.enfant || '').trim() || `Enfant ${i + 1}`;
+
+  /** Couleur du contrat actif, reprise par le calendrier, la barre et la fiche. */
+  function appliquerCouleur() {
+    const c = Calc.COULEURS[settings.couleur] || Calc.COULEURS[Calc.DEFAULTS.couleur];
+    document.documentElement.style.setProperty('--contrat', c.accent);
+    document.documentElement.style.setProperty('--contrat-fond', c.fond);
+  }
+
+  function renderContrats() {
+    const liste = Store.contrats();
+    $('#contrats').innerHTML = liste.map((c, i) => {
+      const coul = Calc.COULEURS[c.couleur] || Calc.COULEURS.ciel;
+      return `<button type="button" class="contrat-chip" data-contrat="${c.id}" aria-pressed="${c.actif}" ` +
+        `style="--c:${coul.accent};--c-fond:${coul.fond}"><span class="pastille" aria-hidden="true"></span>` +
+        `${esc(nomContrat(c, i))}</button>`;
+    }).join('') +
+      '<button type="button" class="contrat-chip ajout" data-ajout-contrat>＋ Ajouter un enfant</button>';
+    $('#btn-suppr-contrat').hidden = liste.length < 2;
+  }
+
+  function renderCouleurs() {
+    $('#couleurs-contrat').innerHTML = Object.entries(Calc.COULEURS).map(([k, c]) =>
+      `<button type="button" class="chip chip-couleur" data-couleur="${k}" aria-pressed="${settings.couleur === k}" ` +
+      `style="--c:${c.accent};--c-fond:${c.fond}"><span class="pastille" aria-hidden="true"></span>${c.label}</button>`
+    ).join('');
+  }
+
+  /** Recharge le contrat actif et redessine tout ce qui en dépend. */
+  function chargerContrat() {
+    settings = Store.loadSettings();
+    days = Store.loadDays();
+    appliquerCouleur();
+    renderContrats();
+    renderParams();
+    renderResultats();
+  }
+
+  $('#contrats').addEventListener('click', e => {
+    const c = e.target.closest('[data-contrat]');
+    if (c) {
+      if (c.getAttribute('aria-pressed') === 'true') return;
+      Store.activer(c.dataset.contrat);
+      chargerContrat();
+      return;
+    }
+    if (e.target.closest('[data-ajout-contrat]')) {
+      Store.ajouterContrat();
+      chargerContrat();
+      showView('params');
+      history.replaceState(null, '', '#params');
+      $('[name=enfant]', form).focus();
+      toast('Contrat ajouté : paramètres copiés, indiquez le prénom et les horaires.');
+      Analytics.event('contrat-ajout');
+    }
+  });
+
   /* ---------- Onglets ---------- */
 
   function showView(name) {
@@ -71,7 +130,7 @@
   function renderCalendrier() {
     $('#mois-titre').textContent = Calc.fmtMois(moisCal);
     $('#brand-sub').textContent = settings.enfant
-      ? `Garde de ${settings.enfant}`
+      ? `Garde ${/^[aeiouyhàâéèêëîïôöùûü]/i.test(settings.enfant) ? 'd’' : 'de '}${settings.enfant}`
       : 'Suivi de garde';
 
     const resume = Calc.month(moisCal, days, settings);
@@ -406,10 +465,32 @@
        </div>`).join('');
 
     renderTypeRepas();
+    renderCouleurs();
     syncConditionnels();
     renderReadouts();
     renderStorageInfo();
   }
+
+  $('#couleurs-contrat').addEventListener('click', e => {
+    const b = e.target.closest('[data-couleur]'); if (!b) return;
+    settings.couleur = b.dataset.couleur;
+    Store.saveSettings(settings);
+    appliquerCouleur();
+    renderCouleurs();
+    renderContrats();
+    renderPaie();
+  });
+
+  $('#btn-suppr-contrat').addEventListener('click', () => {
+    const liste = Store.contrats();
+    const i = liste.findIndex(c => c.actif);
+    if (!confirm(`Supprimer le contrat « ${nomContrat(liste[i], i)} » et toutes ses journées ? ` +
+      'Pensez à exporter une sauvegarde avant.')) return;
+    Store.supprimerContrat(liste[i].id);
+    chargerContrat();
+    toast('Contrat supprimé.');
+    Analytics.event('contrat-suppression');
+  });
 
   function renderTypeRepas() {
     $('#type-repas').innerHTML = repasActifs().length
@@ -449,9 +530,11 @@
   function renderStorageInfo() {
     const n = Object.keys(days).length;
     const mois = new Set(Object.keys(days).map(d => d.slice(0, 7)));
-    $('#storage-info').textContent = n
-      ? `${n} journée${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} sur ${mois.size} mois.`
-      : 'Aucune donnée enregistrée pour l’instant.';
+    const nc = Store.contrats().length;
+    $('#storage-info').textContent = (n
+      ? `${n} journée${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} sur ${mois.size} mois pour ce contrat.`
+      : 'Aucune journée enregistrée pour ce contrat.') +
+      (nc > 1 ? ` ${nc} contrats au total.` : '');
   }
 
   form.addEventListener('input', e => {
@@ -474,6 +557,7 @@
     syncConditionnels();
     renderReadouts();
     renderResultats();
+    if (el.name === 'enfant') renderContrats();
 
     // Activer/désactiver un repas change la liste proposée dans la journée type.
     // On ne re-rend que ce bloc, pour ne pas retirer le focus de la case cochée.
@@ -496,24 +580,20 @@
   $('#file-import').addEventListener('change', async e => {
     const f = e.target.files[0];
     if (!f) return;
-    if (!confirm('L’import remplace les paramètres et les journées existantes. Continuer ?')) {
+    if (!confirm('L’import remplace tous les contrats, paramètres et journées existants. Continuer ?')) {
       e.target.value = ''; return;
     }
     const res = Store.importJSON(await f.text());
     e.target.value = '';
     if (!res.ok) return toast(res.message);
-    settings = Store.loadSettings();
-    days = Store.loadDays();
-    renderParams(); renderCalendrier();
+    chargerContrat();
     toast(res.message);
   });
 
   $('#btn-reset').addEventListener('click', () => {
-    if (!confirm('Effacer définitivement toutes les données (paramètres et journées) ?')) return;
-    localStorage.clear();
-    settings = Store.loadSettings();
-    days = {};
-    renderParams(); renderCalendrier();
+    if (!confirm('Effacer définitivement toutes les données (tous les contrats, paramètres et journées) ?')) return;
+    Store.effacerTout();
+    chargerContrat();
     toast('Données effacées.');
   });
 
@@ -613,7 +693,7 @@
         <div class="parties">
           <div class="partie"><h3>Employeur</h3><p>${esc(s.employeur) || '—'}</p></div>
           <div class="partie"><h3>Salarié</h3><p>${esc(s.assmat) || '—'}</p></div>
-          <div class="partie"><h3>Enfant accueilli</h3><p>${esc(s.enfant) || '—'}</p></div>
+          <div class="partie"><h3>Enfant accueilli</h3><p><span class="pastille-contrat" aria-hidden="true"></span>${esc(s.enfant) || '—'}</p></div>
           <div class="partie"><h3>Contrat</h3><p>${s.mode === 'mensualisation'
             ? `Mensualisation · ${Calc.fmtH(s.heuresSemaine)}/sem. · ${Calc.anneeComplete(s)
                 ? 'année complète' : `année incomplète (${s.semainesAn} sem.)`}`
@@ -681,19 +761,26 @@
   $('#paie-prev').addEventListener('click', () => { moisPaie = Calc.shiftMonth(moisPaie, -1); renderPaie(); });
   $('#paie-next').addEventListener('click', () => { moisPaie = Calc.shiftMonth(moisPaie, 1);  renderPaie(); });
 
+  /** 'emma-' : distingue les fichiers de chaque enfant (sans accents ni espaces). */
+  const prefixeFichier = () => {
+    const p = (settings.enfant || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return p ? `${p}-` : '';
+  };
+
   $('#btn-print').addEventListener('click', () => { Analytics.event('imprimer'); window.print(); });
 
   $('#btn-csv').addEventListener('click', () => {
     Analytics.event('export-csv');
     const r = Calc.month(moisPaie, days, settings);
-    Store.download(`pay-assmat-${moisPaie}.csv`, Store.exportCSV(r, settings), 'text/csv');
+    Store.download(`pay-assmat-${prefixeFichier()}${moisPaie}.csv`, Store.exportCSV(r, settings), 'text/csv');
     toast('CSV téléchargé.');
   });
 
   $('#btn-copy-paje').addEventListener('click', async () => {
     const r = Calc.month(moisPaie, days, settings).pajemploi;
     const txt = [
-      `Pajemploi — ${Calc.fmtMois(moisPaie)}`,
+      `Pajemploi — ${settings.enfant ? `${settings.enfant} — ` : ''}${Calc.fmtMois(moisPaie)}`,
       `Heures normales : ${Calc.fmtNum(r.heures)}`,
       ...(r.heuresMajorees ? [`Heures majorées : ${Calc.fmtNum(r.heuresMajorees)}`] : []),
       `Jours d'activité : ${r.joursActivite}`,
@@ -765,11 +852,19 @@
 
   /* ================= Démarrage ================= */
 
+  appliquerCouleur();
+  renderContrats();
   renderParams();
   renderCalendrier();
   renderPaie();   // la fiche doit exister même si l'onglet n'a pas été ouvert (impression directe)
   vueDeLAdresse();
 
   // Une impression déclenchée depuis un autre onglet doit porter sur des chiffres à jour.
-  window.addEventListener('beforeprint', renderPaie);
+  // Le titre de la page sert de nom au PDF : on y met l'enfant et le mois.
+  const titrePage = document.title;
+  window.addEventListener('beforeprint', () => {
+    renderPaie();
+    document.title = `Fiche de paie ${settings.enfant ? `${settings.enfant} ` : ''}${Calc.fmtMois(moisPaie)}`;
+  });
+  window.addEventListener('afterprint', () => { document.title = titrePage; });
 })();

@@ -206,6 +206,37 @@ a.btn svg { width: 18px; height: 18px; flex: none; }
 .card-don .btn svg { color: var(--error); }
 .small { font-size: 13px; line-height: 18px; }
 
+/* ---------- Contrats (un par enfant) ---------- */
+
+.contrats {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 calc(-1 * var(--margin)) var(--stack-sm); padding: 4px var(--margin);
+}
+.contrats::-webkit-scrollbar { display: none; }
+.contrat-chip {
+  flex: none; appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: var(--r-full);
+  border: 2px solid var(--surf-high); background: var(--surf-lowest); color: var(--on-surface);
+  font: 700 14px/20px 'Nunito Sans', sans-serif;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+.contrat-chip[aria-pressed="true"] { background: var(--c-fond); border-color: var(--c); }
+.contrat-chip.ajout { color: var(--on-surface-variant); border-style: dashed; background: transparent; }
+.pastille, .pastille-contrat {
+  width: 12px; height: 12px; border-radius: 50%; flex: none; display: inline-block;
+  background: var(--c, var(--contrat));
+}
+.pastille-contrat { margin-right: 8px; vertical-align: 0; }
+.chip-couleur { display: inline-flex; align-items: center; gap: 8px; }
+.chip.chip-couleur[aria-pressed="true"] { background: var(--c-fond); border-color: var(--c); color: var(--on-surface); }
+.couleurs-contrat { margin-top: var(--stack-md); }
+#btn-suppr-contrat { margin-top: var(--stack-md); }
+#btn-suppr-contrat[hidden] { display: none; }
+
+/* Liseré de la couleur du contrat actif sur le calendrier. */
+.card:has(#cal-grid) { border-top: 4px solid var(--contrat, transparent); }
+
 /* ---------- Onglets ----------
    Ordinateur : rail segmenté sous l'en-tête. Mobile : barre fixe en bas de l'écran,
    à portée de pouce, icône au-dessus du libellé. */
@@ -538,7 +569,7 @@ legend {
 .day .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--secondary-fixed-dim); }
 
 /* Journée saisie : bleu ciel. Absence : rose poudré, jamais alarmant. */
-.day.filled { background: var(--primary-container); }
+.day.filled { background: var(--contrat-fond, var(--primary-container)); }
 .day.filled .n { color: var(--on-primary-container); }
 .day.filled .h { color: var(--on-primary-fixed); }
 .day.off { background: var(--secondary-container); }
@@ -568,7 +599,7 @@ legend {
 }
 .lg { width: 14px; height: 14px; border-radius: var(--r-sm); display: inline-block; margin-left: var(--stack-sm); }
 .lg:first-child { margin-left: 0; }
-.lg-present { background: var(--primary-container); }
+.lg-present { background: var(--contrat-fond, var(--primary-container)); }
 .lg-absent  { background: var(--secondary-container); }
 .lg-repas   { background: var(--secondary-fixed-dim); border-radius: 50%; width: 8px; height: 8px; }
 
