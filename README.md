@@ -3,8 +3,16 @@
 Application web installable (PWA) pour suivre les journées de garde d'un enfant chez son
 assistante maternelle et produire la fiche de paie mensuelle.
 
-Tout fonctionne **hors ligne** et **sans serveur** : les données ne quittent jamais l'appareil
-(elles sont conservées dans le `localStorage` du navigateur).
+Tout fonctionne **hors ligne** et **sans serveur** : les données saisies ne quittent jamais
+l'appareil (elles sont conservées dans le `localStorage` du navigateur).
+
+## Mesure d'audience
+
+[GoatCounter](https://www.goatcounter.com), sans cookie : pas de bannière de consentement.
+Seules les visites et quelques actions sont comptées (changement d'onglet, « Voir la
+déclaration », impression, export CSV, copie du récap, sauvegarde, installation) — jamais
+les journées ni les paramètres. Pour l'activer, renseigner `CODE` dans `js/analytics.js`
+avec le code du site GoatCounter ; la mesure est inactive en local et hors HTTPS.
 
 ## Utilisation
 

@@ -1,11 +1,13 @@
 /* Service worker : l'application fonctionne entièrement hors ligne.
-   Aucune donnée n'est envoyée sur le réseau — le cache ne sert qu'aux fichiers de l'app. */
+   Les données saisies ne sont jamais envoyées sur le réseau — le cache ne sert qu'aux
+   fichiers de l'app. La mesure d'audience (GoatCounter, autre origine) n'est pas interceptée. */
 
-const VERSION = 'pay-assmat-v9';
+const VERSION = 'pay-assmat-v10';
 const SHELL = [
   './',
   './index.html',
   './css/style.css',
+  './js/analytics.js',
   './js/calc.js',
   './js/store.js',
   './js/app.js',

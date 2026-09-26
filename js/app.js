@@ -43,7 +43,10 @@
     window.scrollTo({ top: 0 });
   }
 
-  $$('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
+  $$('.tab').forEach(t => t.addEventListener('click', () => {
+    showView(t.dataset.view);
+    Analytics.event(`onglet-${t.dataset.view}`);
+  }));
 
   /* ================= CALENDRIER ================= */
 
@@ -172,6 +175,7 @@
   $('#btn-voir-paje').addEventListener('click', () => {
     moisPaie = moisCal;
     showView('paie');
+    Analytics.event('voir-declaration');
     // showView remonte en haut de page : on descend au bloc à l'image suivante.
     requestAnimationFrame(() => { const bloc = $('#paje'); if (bloc) bloc.scrollIntoView({ block: 'start' }); });
   });
@@ -460,6 +464,7 @@
     const d = new Date().toISOString().slice(0, 10);
     Store.download(`pay-assmat-sauvegarde-${d}.json`, Store.exportJSON(), 'application/json');
     toast('Sauvegarde téléchargée.');
+    Analytics.event('sauvegarde');
   });
 
   $('#btn-import').addEventListener('click', () => $('#file-import').click());
@@ -623,9 +628,10 @@
   $('#paie-prev').addEventListener('click', () => { moisPaie = Calc.shiftMonth(moisPaie, -1); renderPaie(); });
   $('#paie-next').addEventListener('click', () => { moisPaie = Calc.shiftMonth(moisPaie, 1);  renderPaie(); });
 
-  $('#btn-print').addEventListener('click', () => window.print());
+  $('#btn-print').addEventListener('click', () => { Analytics.event('imprimer'); window.print(); });
 
   $('#btn-csv').addEventListener('click', () => {
+    Analytics.event('export-csv');
     const r = Calc.month(moisPaie, days, settings);
     Store.download(`pay-assmat-${moisPaie}.csv`, Store.exportCSV(r, settings), 'text/csv');
     toast('CSV téléchargé.');
@@ -646,6 +652,7 @@
     try {
       await navigator.clipboard.writeText(txt);
       toast('Récap copié.');
+      Analytics.event('copier-recap');
     } catch {
       // clipboard indisponible (contexte non sécurisé, permission refusée)
       prompt('Copiez le récapitulatif :', txt);
@@ -684,7 +691,7 @@
     $('#btn-install').hidden = true;
   });
 
-  window.addEventListener('appinstalled', () => { $('#btn-install').hidden = true; });
+  window.addEventListener('appinstalled', () => { $('#btn-install').hidden = true; Analytics.event('installation'); });
 
   /* ================= Démarrage ================= */
 
