@@ -209,6 +209,31 @@ a.btn svg { width: 18px; height: 18px; flex: none; }
 .card-don .btn svg { color: var(--error); }
 .small { font-size: 13px; line-height: 18px; }
 
+/* ---------- Témoignage du créateur ---------- */
+.temoignage {
+  margin: 0 0 var(--stack-sm); padding: 16px 20px;
+  background: var(--secondary-container); color: var(--on-secondary-fixed);
+  border-radius: var(--r-md); border-left: 4px solid var(--secondary);
+}
+/* Guillemets en masque : ils prennent la couleur du thème. */
+.temoignage blockquote::before {
+  content: ""; display: block; width: 32px; height: 32px; margin: 0 0 4px -4px;
+  background: var(--secondary); opacity: .55;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 18.5v-5.2C4 8.9 6.2 6 10.3 5l.9 1.9C8.8 7.8 7.7 9.4 7.6 11.5H11v7H4zm9 0v-5.2C13 8.9 15.2 6 19.3 5l.9 1.9c-2.4.9-3.5 2.5-3.6 4.6H20v7h-7z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 18.5v-5.2C4 8.9 6.2 6 10.3 5l.9 1.9C8.8 7.8 7.7 9.4 7.6 11.5H11v7H4zm9 0v-5.2C13 8.9 15.2 6 19.3 5l.9 1.9c-2.4.9-3.5 2.5-3.6 4.6H20v7h-7z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.temoignage blockquote { margin: 0; }
+.temoignage blockquote p { margin: 0 0 8px; font-size: 15px; line-height: 23px; }
+.temoignage figcaption {
+  display: flex; align-items: center; gap: 12px; margin-top: 12px;
+  font-size: 13px; line-height: 18px; color: var(--secondary);
+}
+.temoignage-photo {
+  width: 48px; height: 48px; flex: none; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--surf-lowest);
+}
+.guide .temoignage { max-width: 760px; box-shadow: var(--lift); }
+
 /* ---------- Contrats (un par enfant) ---------- */
 
 .contrats {
